@@ -42,7 +42,11 @@ def get_columns_isnull_info_df(df, in_percent=True):
         cols_null = df.isnull().sum()
         
     cols_with_null = cols_null[cols_null > 0].sort_values(ascending=False)
-    return cols_with_null
+    
+    if len(cols_with_null) > 0:
+        return cols_with_null
+    else:
+        return 'No one null values!'
 
 
 def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
