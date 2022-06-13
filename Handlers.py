@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt # библиотека визуализации
+from scipy import stats # библиотека для расчетов
 
 
 def get_columns_unique_info_df(df):
@@ -133,3 +135,24 @@ def get_low_inform_features_list(df, level=0.95):
             print(f'{col}: {round(nunique_ratio * 100, 2)}% уникальных значений')
 
     return low_inform_features
+
+
+def Q_Q_plot(df, column_name):
+    """
+    Метод для получения графиков Q-Q Plots для проверки нормальности распределения фитчи
+
+    :param df: Датафрейм для анализа признаков
+    :param column_name: Имя столбца по которому построить графики
+    """
+    
+    plt.figure(figsize=(14, 6))
+    plt.subplot(1, 2, 1) # задаем сетку рисунка количество строк и столбцов
+    stats.probplot(df[column_name], plot=plt) # qq plot
+
+    plt.subplot(1, 2, 2) # располагаем второй рисунок рядом
+    plt.hist(df[column_name]) # гистограмма распределения признака
+    plt.title(column_name)
+
+    plt.tight_layout() # чтобы графики не наезжали другу на друга, используем tight_layout
+
+    plt.show() # просмотр графика
