@@ -1,7 +1,7 @@
+import matplotlib.pyplot as plt  # библиотека визуализации
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt # библиотека визуализации
-from scipy import stats # библиотека для расчетов
+from scipy import stats  # библиотека для расчетов
 
 
 def get_columns_unique_info_df(df):
@@ -25,7 +25,7 @@ def get_columns_unique_info_df(df):
         unique_list,
         columns=['Column Name', 'Num Unique', 'Num Null', 'Type']
     )
-    #.sort_values(by='Num Unique', ignore_index=True)
+    # .sort_values(by='Num Unique', ignore_index=True)
 
     return unique_counts
 
@@ -42,9 +42,9 @@ def get_columns_isnull_info_df(df, in_percent=True):
         cols_null = df.isnull().mean() * 100
     else:
         cols_null = df.isnull().sum()
-        
+
     cols_with_null = cols_null[cols_null > 0].sort_values(ascending=False)
-    
+
     if len(cols_with_null) > 0:
         return cols_with_null
     else:
@@ -137,22 +137,22 @@ def get_low_inform_features_list(df, level=0.95):
     return low_inform_features
 
 
-def Q_Q_plot(df, column_name):
+def QQ_Plots(df, column_name):
     """
     Метод для получения графиков Q-Q Plots для проверки нормальности распределения фитчи
 
     :param df: Датафрейм для анализа признаков
     :param column_name: Имя столбца по которому построить графики
     """
-    
-    plt.figure(figsize=(14, 6))
-    plt.subplot(1, 2, 1) # задаем сетку рисунка количество строк и столбцов
-    stats.probplot(df[column_name], plot=plt) # qq plot
 
-    plt.subplot(1, 2, 2) # располагаем второй рисунок рядом
-    plt.hist(df[column_name]) # гистограмма распределения признака
+    plt.figure(figsize=(14, 6))
+    plt.subplot(1, 2, 1)  # задаем сетку рисунка количество строк и столбцов
+    stats.probplot(df[column_name], plot=plt)  # qq plot
+
+    plt.subplot(1, 2, 2)  # располагаем второй рисунок рядом
+    plt.hist(df[column_name])  # гистограмма распределения признака
     plt.title(column_name)
 
-    plt.tight_layout() # чтобы графики не наезжали другу на друга, используем tight_layout
+    plt.tight_layout()  # чтобы графики не наезжали другу на друга, используем tight_layout
 
-    plt.show() # просмотр графика
+    plt.show()  # просмотр графика
