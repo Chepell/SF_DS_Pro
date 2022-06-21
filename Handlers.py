@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt  # библиотека визуализации
 import numpy as np
 import pandas as pd
 from scipy import stats  # библиотека для расчетов
+from scipy.stats import norm
+from scipy.stats import t
 
 
 def get_columns_unique_info_df(df):
@@ -156,3 +158,44 @@ def QQ_Plots(df, column_name):
     plt.tight_layout()  # чтобы графики не наезжали другу на друга, используем tight_layout
 
     plt.show()  # просмотр графика
+
+
+def confidence_interval_v0(n, x_mean, sigma, gamma):
+    """
+    Функци для расчета доверительного интервала, когда известно истинное стандартное отклонение на всей совокупности
+
+    :param n: Количество элементов в выборке
+    :param x_mean: Выборочное среднее
+    :param sigma: Истинное стандартное отклонение
+    :param gamma: Уровень надежности
+    :return: Возвращает кортеж границ доверительного интервала
+    """
+
+    alpha = 1 - gamma
+    z_crit = -norm.ppf(alpha / 2)
+    print(z_crit)
+    eps = z_crit * sigma / (n ** 0.5)  # погрешность
+    lower_bound = x_mean - eps  # левая (нижняя) граница
+    upper_bound = x_mean + eps  # правая (верхняя) граница
+    return round(lower_bound, 2), round(upper_bound, 2)
+
+
+def confidence_interval(n, x_mean, x_std, gamma):
+    """
+    Функци для расчета доверительного интервала, когда известно выборочное стандартное отклонение
+
+    :param n: Количество элементов в выборке
+    :param x_mean: Выборочное среднее
+    :param x_std: Выборочное стандартное отклонение
+    :param gamma: Уровень надежности
+    :return: Возвращает кортеж границ доверительного интервала
+    """
+
+    alpha = 1 - gamma
+    k = n - 1
+    t_crit = -t.ppf(alpha / 2, k)  # t-критическое
+    eps = t_crit * x_std / (n ** 0.5)  # погрешность
+    lower_bound = x_mean - eps  # левая (нижняя) граница
+    upper_bound = x_mean + eps  # правая (верхняя) граница
+
+    return round(lower_bound, 2), round(upper_bound, 2)
