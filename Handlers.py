@@ -160,7 +160,7 @@ def QQ_Plots(df, column_name):
     plt.show()  # просмотр графика
 
 
-def confidence_interval_v0(n, x_mean, sigma, gamma):
+def confidence_interval_v0(n, x_mean, sigma, gamma=0.95):
     """
     Функци для расчета доверительного интервала, когда известно истинное стандартное отклонение на всей совокупности
 
@@ -180,7 +180,7 @@ def confidence_interval_v0(n, x_mean, sigma, gamma):
     return round(lower_bound, 2), round(upper_bound, 2)
 
 
-def confidence_interval(n, x_mean, x_std, gamma):
+def confidence_interval(n, x_mean, x_std, gamma=0.95):
     """
     Функци для расчета доверительного интервала, когда известно выборочное стандартное отклонение
 
@@ -199,3 +199,43 @@ def confidence_interval(n, x_mean, x_std, gamma):
     upper_bound = x_mean + eps  # правая (верхняя) граница
 
     return round(lower_bound, 2), round(upper_bound, 2)
+
+
+def proportions_confidence_interval(n, x_p, gamma=0.95):
+    """
+    Функция расчета доверительного интервала для конверсий.
+    Конверсия - доля пользователей совершивших целевое действие.
+
+    :param n: Размер выборки
+    :param x_p: Выборочная пропорция или конверсия
+    :param gamma: Уровень надежности
+    :return: Возвращает кортеж из границ доверительного интервала
+    """
+
+    alpha = 1 - gamma  # уровень значимости
+    z_crit = -norm.ppf(alpha / 2)  # z критическое
+    eps = z_crit * (x_p * (1 - x_p) / n) ** 0.5  # погрешность
+    lower_bound = x_p - eps  # левая (нижняя) граница
+    upper_bound = x_p + eps  # правая (верхняя) граница
+    # возвращаем кортеж из округлённых границ интервала
+    return round(lower_bound * 100, 2), round(upper_bound * 100, 2)
+
+
+def diff_proportions_confidence_interval(n, xp, gamma=0.95):
+    """
+    Функция для расчета доверительного интервала разницы конверсий
+
+    :param n: Список размеров выборки для варианта A и B
+    :param xp: Список выборочных пропорция или конверсий для варианта A и B
+    :param gamma: Уровень надежности
+    :return: Возвращает кортеж из границ доверительного интервала
+    """
+
+    alpha = 1 - gamma  # уровень значимости
+    diff = xp[1] - xp[0]  # выборочная разница конверсий групп B и A
+    z_crit = -norm.ppf(alpha / 2)  # z критическое
+    eps = z_crit * (xp[0] * (1 - xp[0]) / n[0] + xp[1] * (1 - xp[1]) / n[1]) ** 0.5  # погрешность
+    lower_bound = diff - eps  # левая (нижняя) граница
+    upper_bound = diff + eps  # правая (верхняя) граница
+    # возвращаем кортеж из округлённых границ интервала
+    return round(lower_bound * 100, 2), round(upper_bound * 100, 2)
