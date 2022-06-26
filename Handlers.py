@@ -259,30 +259,21 @@ def get_logger(path, file):
     # если  файла нет, создаем его
     if not os.path.isfile(log_file):
         open(log_file, "w+").close()
-
     # формат логирования
     file_logging_format = "%(levelname)s: %(asctime)s: %(message)s"
     # формат даты
     date_format = "%Y-%m-%d %H:%M:%S"
-
     # конфигурируем лог-файл
     logging.basicConfig(format=file_logging_format, datefmt=date_format, encoding='utf-8')
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
-
-    # logging.getLogger().setLevel(logging.DEBUG)
-    #   logging.debug('Это сообщение отладки')
-
     # создадим хэнлдер для записи лога в файл
     handler = logging.FileHandler(log_file, encoding='utf-8')
-
     # установим уровень логирования
     handler.setLevel(logging.DEBUG)
-
     # создадим формат логирования, используя file_logging_format
     formatter = logging.Formatter(file_logging_format, date_format)
     handler.setFormatter(formatter)
-
     # добавим хэндлер лог-файлу
     logger.addHandler(handler)
     return logger
