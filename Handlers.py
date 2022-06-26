@@ -1,3 +1,6 @@
+import logging
+import os
+
 import matplotlib.pyplot as plt  # библиотека визуализации
 import numpy as np
 import pandas as pd
@@ -239,3 +242,47 @@ def diff_proportions_confidence_interval(n, xp, gamma=0.95):
     upper_bound = diff + eps  # правая (верхняя) граница
     # возвращаем кортеж из округлённых границ интервала
     return round(lower_bound * 100, 2), round(upper_bound * 100, 2)
+
+
+def get_logger(path, file):
+    """
+    Функция для создания лог-файла и записи в него информации
+
+    :param path: путь к директории
+    :param file: имя файла
+    :return: Возвращает объект логгера
+    """
+
+    # проверяем, существует ли файл
+    log_file = os.path.join(path, file)
+
+    # если  файла нет, создаем его
+    if not os.path.isfile(log_file):
+        open(log_file, "w+").close()
+
+    # формат логирования
+    file_logging_format = "%(levelname)s: %(asctime)s: %(message)s"
+    # формат даты
+    date_format = "%Y-%m-%d %H:%M:%S"
+
+    # конфигурируем лог-файл
+    logging.basicConfig(format=file_logging_format, datefmt=date_format, encoding='utf-8')
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    # logging.getLogger().setLevel(logging.DEBUG)
+    #   logging.debug('Это сообщение отладки')
+
+    # создадим хэнлдер для записи лога в файл
+    handler = logging.FileHandler(log_file, encoding='utf-8')
+
+    # установим уровень логирования
+    handler.setLevel(logging.DEBUG)
+
+    # создадим формат логирования, используя file_logging_format
+    formatter = logging.Formatter(file_logging_format, date_format)
+    handler.setFormatter(formatter)
+
+    # добавим хэндлер лог-файлу
+    logger.addHandler(handler)
+    return logger
