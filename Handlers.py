@@ -2,16 +2,21 @@ import logging
 import os
 
 import matplotlib.pyplot as plt  # библиотека визуализации
+
+plt.style.use('ggplot')
+
 import numpy as np
 import pandas as pd
+import seaborn as sns
+
 from scipy import stats  # библиотека для расчетов
 from scipy.stats import norm
 from scipy.stats import t
 
 
-def get_columns_unique_info_df(df):
+def get_columns_null_info_df(df):
     """
-    Функция для получиения количества уникальных значнений, количества пусты значений и типа данных в каждом из столбцов
+    Функция для получиения информации по количеству и % нулевых значнений и типа данных в каждом из столбцов
 
     :param df: Датафрейм для анализа
     :return: Итоговый датафрейм с разультатами анализа
@@ -19,20 +24,52 @@ def get_columns_unique_info_df(df):
 
     # создаём пустой список
     unique_list = []
+
     # пробегаемся по именам столбцов в таблице
     for col in df.columns:
-        # создаём кортеж (имя столбца, число уникальных значений)
-        item = (col, df[col].nunique(), df[col].isnull().sum(), df[col].dtype)
+        item = (col, df[col].isnull().sum(), round(df[col].isnull().mean() * 100, 2), df[col].dtype)
         # добавляем кортеж в список
         unique_list.append(item)
         # создаю датафрейм который будет возвращаться
     unique_counts = pd.DataFrame(
         unique_list,
-        columns=['Column Name', 'Num Unique', 'Num Null', 'Type']
+        columns=['Column Name', 'Count Null', '% Null', 'Type']
     )
     # .sort_values(by='Num Unique', ignore_index=True)
 
     return unique_counts
+
+
+def get_top_unique_values(df, level=0):
+    """
+    Функция для получения инфомации по уникальным значениям в признаках
+
+    :param df: Датафрейм для анализа
+    :param level: Уровень уникальности в %, признаки ниже этого уровня не выводятся
+    :return: Возвращает датафрейм с именем признака, количестве уникальных значений, наиболее часто повторяющимся
+    уникальным значением, сколько % от выборки это значение занимает, количество повторов
+    """
+
+    cols = list(df.columns)
+
+    # создаём пустой список
+    unique_list = []
+
+    for col in cols:
+        col_lev = round(df[col].value_counts(normalize=True).values[0] * 100, 2)
+
+        if col_lev > level:
+            item = (col, df[col].nunique(), df[col].value_counts(normalize=True).index[0], col_lev,
+                    df[col].value_counts().values[0])
+            # добавляем кортеж в список
+            unique_list.append(item)
+
+    unique_values = pd.DataFrame(
+        unique_list,
+        columns=['Column Name', 'Count Unique', 'Top Value', 'Top Value %', 'Top Value Count']
+    )
+
+    return unique_values
 
 
 def get_columns_isnull_info_df(df, in_percent=True):
@@ -161,6 +198,49 @@ def QQ_Plots(df, column_name):
     plt.tight_layout()  # чтобы графики не наезжали другу на друга, используем tight_layout
 
     plt.show()  # просмотр графика
+
+
+def Hist_and_Box_Plots(df, column_name, bins=30):
+    """
+    Функция для построения диаграммы распределения и коробки с усами
+    для оценки нормальности распределения и поиска выбросов
+
+    :param df: Исходный датафрейм
+    :param column_name: Имя признака для анализа
+    :param bins: Количество групп по умолчанию 30
+    :return: Выводит график
+    """
+
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(18, 8))
+    axes[0].ticklabel_format(style='plain', axis='x')
+    histplot = sns.histplot(data=df, x=column_name, bins=bins, ax=axes[0])
+
+    histplot.set_title(f'{column_name} Histogram')
+    axes[1].ticklabel_format(style='plain', axis='x')
+    boxplot = sns.boxplot(data=df, x=column_name, ax=axes[1])
+    boxplot.set_title(f'{column_name} Boxplot')
+
+    plt.tight_layout()
+    plt.show()
+
+
+def null_heatmap_plot(df):
+    """
+    Функция для построения тепловой карты пропуска в столбцах датафрейма.
+    Выводятся только столбцы в которых есть пропуски!
+
+    :param df:
+    :return:
+    """
+
+    cols_null_perc = df.isnull().mean() * 100
+    cols_null_perc = cols_null_perc[cols_null_perc > 0]
+    cols_null_perc = cols_null_perc.index.to_list()
+
+    colors = ['blue', 'yellow']
+    fig = plt.figure(figsize=(16, 10))
+    ax = sns.heatmap(df[cols_null_perc].isnull(), cmap=colors, cbar=False)
+    ax.set_title('Null Heatmap')
 
 
 def confidence_interval_v0(n, x_mean, sigma, gamma=0.95):
