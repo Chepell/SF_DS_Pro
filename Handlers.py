@@ -112,11 +112,15 @@ def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
 
     quartile_1, quartile_3 = x.quantile(0.25), x.quantile(0.75),
     iqr = quartile_3 - quartile_1
+
     lower_bound = quartile_1 - (iqr * left)
     upper_bound = quartile_3 + (iqr * right)
+
     outliers = df[(x < lower_bound) | (x > upper_bound)]
     cleaned = df[(x > lower_bound) & (x < upper_bound)]
-    return outliers, cleaned
+    info = f'Выбросы: {outliers.shape[0]} строк ({outliers.shape[0] / df.shape[0] * 100:.2f}%).'
+
+    return info, outliers, cleaned
 
 
 def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
@@ -144,8 +148,9 @@ def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
 
     outliers = df[(current_series < lower_bound) | (current_series > upper_bound)]
     cleaned = df[(current_series > lower_bound) & (current_series < upper_bound)]
+    info = f'Выбросы: {outliers.shape[0]} строк ({outliers.shape[0] / df.shape[0] * 100:.2f}%).'
 
-    return outliers, cleaned
+    return info, outliers, cleaned
 
 
 def get_low_inform_features_list(df, level=0.95):
