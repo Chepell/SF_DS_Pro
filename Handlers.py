@@ -3,8 +3,6 @@ import os
 
 import matplotlib.pyplot as plt  # библиотека визуализации
 
-plt.style.use('ggplot')
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -13,6 +11,7 @@ from scipy import stats  # библиотека для расчетов
 from scipy.stats import norm
 from scipy.stats import t
 
+plt.style.use('ggplot')
 
 def get_columns_null_info_df(df):
     """
