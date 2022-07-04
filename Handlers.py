@@ -2,16 +2,15 @@ import logging
 import os
 
 import matplotlib.pyplot as plt  # библиотека визуализации
-
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 from scipy import stats  # библиотека для расчетов
 from scipy.stats import norm
 from scipy.stats import t
 
 plt.style.use('ggplot')
+
 
 def get_columns_null_info_df(df):
     """
@@ -247,6 +246,7 @@ def null_heatmap_plot(df):
     ax.set_title('Null Heatmap')
 
 
+
 def confidence_interval_v0(n, x_mean, sigma, gamma=0.95):
     """
     Функци для расчета доверительного интервала, когда известно истинное стандартное отклонение на всей совокупности
@@ -361,3 +361,18 @@ def get_logger(path, file):
     # добавим хэндлер лог-файлу
     logger.addHandler(handler)
     return logger
+
+
+def get_X_y_dataset(df, target_feature):
+    """
+    Функция для получения из полного датасета двух, тренировочного и датасета, который содержит лишь целевой признак
+
+    :param df: Исходный, полный датасет для тренировки
+    :param target_feature: Имя целевого признака
+    :return: Возвращает кортеж датасетов (X, y)
+    """
+
+    X = df.drop([target_feature], axis=1)
+    y = df[target_feature]
+
+    return X, y
