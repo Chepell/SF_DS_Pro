@@ -44,12 +44,20 @@ def get_top_unique_values(df, level=0):
 
     :param df: Датафрейм для анализа
     :param level: Уровень уникальности в %, признаки ниже этого уровня не выводятся
-    :return: Возвращает датафрейм с именем признака, количестве уникальных значений, наиболее часто повторяющимся
-    уникальным значением, сколько % от выборки это значение занимает, количество повторов
+    :return: Возвращает датафрейм с именем признака, 
+    количестве уникальных значений, 
+    сколько % от всей выборки занимают уникальные значения,
+    наиболее часто повторяющимся уникальным значением,
+    количество повторов,
+    сколько % от выборки это значение занимает
+    
+    Когда % Unique' > 30, то это повод задуматься об уменьшении числа категорий
     """
 
     cols = list(df.columns)
 
+    df_len = df.shape[0]
+    
     # создаём пустой список
     unique_list = []
 
@@ -57,14 +65,19 @@ def get_top_unique_values(df, level=0):
         col_lev = round(df[col].value_counts(normalize=True).values[0] * 100, 2)
 
         if col_lev > level:
-            item = (col, df[col].nunique(), df[col].value_counts(normalize=True).index[0], col_lev,
-                    df[col].value_counts().values[0])
+            item = (col, 
+                    df[col].nunique(), 
+                    round(df[col].nunique() / df_len * 100, 2), 
+                    df[col].value_counts(normalize=True).index[0], 
+                    df[col].value_counts().values[0], 
+                    col_lev
+                    )
             # добавляем кортеж в список
             unique_list.append(item)
 
     unique_values = pd.DataFrame(
         unique_list,
-        columns=['Column Name', 'Count Unique', 'Top Value', 'Top Value %', 'Top Value Count']
+        columns=['Column Name', 'Count Unique', '% Unique', 'Top Value', 'Top Value Count', 'Top Value %']
     )
 
     return unique_values
@@ -246,7 +259,6 @@ def null_heatmap_plot(df):
     ax.set_title('Null Heatmap')
 
 
-
 def confidence_interval_v0(n, x_mean, sigma, gamma=0.95):
     """
     Функци для расчета доверительного интервала, когда известно истинное стандартное отклонение на всей совокупности
@@ -376,3 +388,28 @@ def get_X_y_dataset(df, target_feature):
     y = df[target_feature]
 
     return X, y
+
+
+def merge_train_and_test_df3(df_train, df_test, target_feature):
+    """
+    Функция для объединения тернировочного и тестового датасета
+
+    :param df_train: Тренировочный датасет с целевым признаком
+    :param df_test: Тестовый датасет, столбца целового признака нет
+    :param target_feature: Имя целевого признака
+    :return: Возвращает объединенный датасет
+    """
+
+    # Реформатирую порядок расположения признаков, что бы целевой признак был в конце
+    train_columns = list(df_train.columns)
+    train_columns.remove(target_feature)
+    train_columns.append(target_feature)
+
+    # Реформатирую порядок столбцов
+    df_train = df_train[train_columns]
+    df_train['sample'] = 'train'  # Помечаю, что это тренировочный датафрейм
+
+    df_test['reviewer_score'] = 0  # На тестовом датафрейме целевой признак заполняю нулями
+    df_test['sample'] = 'test'  # Помечаю, что это тестовый датафрейм
+
+    return df_train.append(df_test).reset_index(drop=True)
