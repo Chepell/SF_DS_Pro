@@ -390,7 +390,7 @@ def get_X_y_dataset(df, target_feature):
     return X, y
 
 
-def merge_train_and_test_df3(df_train, df_test, target_feature):
+def merge_train_and_test_df(df_train, df_test, target_feature):
     """
     Функция для объединения тернировочного и тестового датасета
 
@@ -407,9 +407,13 @@ def merge_train_and_test_df3(df_train, df_test, target_feature):
 
     # Реформатирую порядок столбцов
     df_train = df_train[train_columns]
-    df_train['sample'] = 'train'  # Помечаю, что это тренировочный датафрейм
+    df_train['dataset'] = 'train'  # Помечаю, что это тренировочный датафрейм
 
-    df_test['reviewer_score'] = 0  # На тестовом датафрейме целевой признак заполняю нулями
-    df_test['sample'] = 'test'  # Помечаю, что это тестовый датафрейм
+    df_test[target_feature] = 0  # На тестовом датафрейме целевой признак заполняю нулями
+    df_test['dataset'] = 'test'  # Помечаю, что это тестовый датафрейм
+    
+    
+    df_full = df_train.append(df_test).reset_index(drop=True)
+    df_full['dataset'] = df_full['dataset'].astype('category')
 
-    return df_train.append(df_test).reset_index(drop=True)
+    return df_full
