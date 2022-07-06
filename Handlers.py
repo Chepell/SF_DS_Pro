@@ -390,30 +390,39 @@ def get_X_y_dataset(df, target_feature):
     return X, y
 
 
-def merge_train_and_test_df(df_train, df_test, target_feature):
+def merge_train_and_test_data(train_data, test_data, target_feature):
     """
     Функция для объединения тернировочного и тестового датасета
 
-    :param df_train: Тренировочный датасет с целевым признаком
-    :param df_test: Тестовый датасет, столбца целового признака нет
+    :param train_data: Тренировочный датасет с целевым признаком
+    :param test_data: Тестовый датасет, столбца целового признака нет
     :param target_feature: Имя целевого признака
     :return: Возвращает объединенный датасет
     """
 
     # Реформатирую порядок расположения признаков, что бы целевой признак был в конце
-    train_columns = list(df_train.columns)
+    train_columns = list(train_data.columns)
     train_columns.remove(target_feature)
     train_columns.append(target_feature)
 
     # Реформатирую порядок столбцов
-    df_train = df_train[train_columns]
-    df_train['dataset'] = 'train'  # Помечаю, что это тренировочный датафрейм
+    train_data = train_data[train_columns]
+    train_data['dataset'] = 'train'  # Помечаю, что это тренировочный датафрейм
 
-    df_test[target_feature] = 0  # На тестовом датафрейме целевой признак заполняю нулями
-    df_test['dataset'] = 'test'  # Помечаю, что это тестовый датафрейм
+    test_data[target_feature] = 0  # На тестовом датафрейме целевой признак заполняю нулями
+    test_data['dataset'] = 'test'  # Помечаю, что это тестовый датафрейм
     
     
-    df_full = df_train.append(df_test).reset_index(drop=True)
-    df_full['dataset'] = df_full['dataset'].astype('category')
+    full_data = train_data.append(test_data).reset_index(drop=True)
+    full_data['dataset'] = full_data['dataset'].astype('category')
 
-    return df_full
+    full_data = full_data.convert_dtypes()
+
+    return full_data
+
+def split_full_to_train_and_test(full_data):
+    # Обработанный датасет делим назад на треин и тест части
+    train_data = full_data.query('dataset == "train"').drop(['dataset'], axis=1)
+    test_data = full_data.query('dataset == "test"').drop(['dataset'], axis=1)
+
+    return train_data, test_data
