@@ -57,7 +57,7 @@ def get_top_unique_values(df, level=0):
     cols = list(df.columns)
 
     df_len = df.shape[0]
-    
+
     # создаём пустой список
     unique_list = []
 
@@ -65,11 +65,11 @@ def get_top_unique_values(df, level=0):
         col_lev = round(df[col].value_counts(normalize=True).values[0] * 100, 2)
 
         if col_lev > level:
-            item = (col, 
-                    df[col].nunique(), 
-                    round(df[col].nunique() / df_len * 100, 2), 
-                    df[col].value_counts(normalize=True).index[0], 
-                    df[col].value_counts().values[0], 
+            item = (col,
+                    df[col].nunique(),
+                    round(df[col].nunique() / df_len * 100, 2),
+                    df[col].value_counts(normalize=True).index[0],
+                    df[col].value_counts().values[0],
                     col_lev
                     )
             # добавляем кортеж в список
@@ -400,19 +400,14 @@ def merge_train_and_test_data(train_data, test_data, target_feature):
     :return: Возвращает объединенный датасет
     """
 
-    # Реформатирую порядок расположения признаков, что бы целевой признак был в конце
-    train_columns = list(train_data.columns)
-    train_columns.remove(target_feature)
-    train_columns.append(target_feature)
-
     # Реформатирую порядок столбцов
-    train_data = train_data[train_columns]
+    train_data = reformat_columns(train_data, target_feature)
+
     train_data['dataset'] = 'train'  # Помечаю, что это тренировочный датафрейм
 
     test_data[target_feature] = 0  # На тестовом датафрейме целевой признак заполняю нулями
     test_data['dataset'] = 'test'  # Помечаю, что это тестовый датафрейм
-    
-    
+
     full_data = train_data.append(test_data).reset_index(drop=True)
     full_data['dataset'] = full_data['dataset'].astype('category')
 
@@ -420,9 +415,24 @@ def merge_train_and_test_data(train_data, test_data, target_feature):
 
     return full_data
 
-def split_full_to_train_and_test(full_data):
+
+def split_full_to_train_and_test(full_data, target_feature):
+    # Реформатирую порядок столбцов
+    full_data = reformat_columns(full_data, target_feature)
+
     # Обработанный датасет делим назад на треин и тест части
     train_data = full_data.query('dataset == "train"').drop(['dataset'], axis=1)
     test_data = full_data.query('dataset == "test"').drop(['dataset'], axis=1)
 
     return train_data, test_data
+
+
+def reformat_columns(df, target_feature):
+    columns = list(df.columns)
+    columns.remove(target_feature)
+    columns.append(target_feature)
+
+    # Реформатирую порядок столбцов
+    df = df[columns]
+
+    return df
