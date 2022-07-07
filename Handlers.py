@@ -192,7 +192,10 @@ def get_low_inform_features_list(df, level=0.95):
             low_inform_features.append(col)
             print(f'{col}: {round(nunique_ratio * 100, 2)}% уникальных значений')
 
-    return low_inform_features
+    if low_inform_features:
+        return low_inform_features
+
+    return 'Нет малоинформативных признаков!'
 
 
 def QQ_Plots(df, column_name):
@@ -417,6 +420,14 @@ def merge_train_and_test_data(train_data, test_data, target_feature):
 
 
 def split_full_to_train_and_test(full_data, target_feature):
+    """
+    Функция разбивает полный датасет на train и test части
+
+    :param full_data: Полный датасет, содержит признак dataset со значениями train, test
+    :param target_feature: Имя целевого признака
+    :return: Возвращает кортеж из train и tes датасета
+
+    """
     # Реформатирую порядок столбцов
     full_data = reformat_columns(full_data, target_feature)
 
@@ -428,11 +439,21 @@ def split_full_to_train_and_test(full_data, target_feature):
 
 
 def reformat_columns(df, target_feature):
-    columns = list(df.columns)
-    columns.remove(target_feature)
-    columns.append(target_feature)
+    """
+    Функция реформатирует порядок расположения признаков. Целевой признак будет теперь в конце
 
-    # Реформатирую порядок столбцов
-    df = df[columns]
+    :param df: Исходный датафрейм
+    :param target_feature: Целевой признак, который нужно переместить в конец
+    :return:
+    """
+
+    columns = list(df.columns)
+
+    if target_feature in columns:
+        columns.remove(target_feature)
+        columns.append(target_feature)
+
+        # Реформатирую порядок столбцов
+        df = df[columns]
 
     return df
