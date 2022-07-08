@@ -393,7 +393,7 @@ def get_X_y_dataset(df, target_feature):
     return X, y
 
 
-def merge_train_and_test_data(train_data, test_data, target_feature):
+def merge_train_and_test_to_full(train_data, test_data, target_feature):
     """
     Функция для объединения тернировочного и тестового датасета
 
