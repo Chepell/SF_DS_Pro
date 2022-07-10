@@ -457,3 +457,103 @@ def reformat_columns(df, target_feature):
         df = df[columns]
 
     return df
+
+
+def calculate_target_feature_per_category(full_data, category_feature: str, TARGET_FEATURE: str, func='mean'):
+    """
+    Функция для расчета среднего (мединаы, СКО) значения для целеового по каждой категории выбранного признака
+
+    :param full_data: Полный датасет
+    :param category_feature: Имя категориального признака в разрезе которого нужно посчитать целевой
+    :param TARGET_FEATURE: Имя целевого признака
+    :param func: Функция по которой проводить аггрегацию. mean, median, std
+    :return:
+    """
+
+    # Из датасета получение датафрейма категорий с их долей в % ко всему датасету
+    df = pd.DataFrame(full_data[category_feature].value_counts(True) * 100).reset_index()
+    df.columns = [category_feature, '%']  # переименовываю столбцы
+
+    # Проверяю, что передан полный датасет, в котором есть признак отвечающий за разделение выборок на треин и тест
+    if 'dataset' in full_data.columns:
+        # Получаю треин датасет в котором есть значения целевого признака
+        train_data = full_data.query('dataset == "train"').drop(['dataset'], axis=1)
+    else:
+        train_data = full_data
+
+    # Группирую по категориям получаю агрегированное по указанной функции значения целевого признака
+    group_category = train_data.groupby([category_feature])[TARGET_FEATURE].agg([func]).reset_index()
+
+    return df.merge(group_category, on=category_feature, how='left')
+
+
+def plot_categories(full_data, category_feature, level=5):
+    """
+    Столбчатая диаграмма для категориального признака
+
+    :param full_data: Датасет
+    :param category_feature: Имя признака
+    :param level: Уровень значимости в %
+
+    :return: Выводит график
+    """
+
+    df = pd.DataFrame(full_data[category_feature].value_counts(True) * 100).reset_index()
+    df.columns = [category_feature, '%']  # переименовываю столбцы
+
+    col = df.columns
+
+    fig, ax = plt.subplots(figsize=(16, 8))
+    plt.xticks(df.index, df[category_feature], rotation=90)
+
+    ax.bar(df.index, df[col[1]], color='lightgrey')
+    ax.axhline(y=level, color='red')
+    ax.set_ylabel(f'Category share, {col[1]}')
+    ax.set_xlabel(f'Category {category_feature}')
+    ax.grid(False)
+    plt.show()
+
+
+def plot_categories_and_targer(full_data, category_feature, TARGET_FEATURE, func='mean', level=5):
+    """
+    Столбчатая диаграмма для категориального признака со средним (медиана, СКО)
+    значением целевого признака для каждой категории
+
+    :param full_data: Датасет
+    :param category_feature: Имя категориального признака
+    :param TARGET_FEATURE: Имя целевого признака
+    :param func: Функция по которой проводить аггрегацию. mean, median, std
+    :param level: Уровень отсечения доли признака. По умолчанию 5%.
+    Отображается на графике горизонтальной красной линией
+    :return: Выводит график на экран
+    """
+
+    df = calculate_target_feature_per_category(full_data, category_feature, TARGET_FEATURE, func)
+
+    col = df.columns
+
+    fig, ax = plt.subplots(figsize=(16, 8))
+    plt.xticks(df.index, df[category_feature], rotation=90)
+
+    ax2 = ax.twinx()
+    ax.bar(df.index, df[col[1]], color='lightgrey')
+    ax2.plot(df.index, df[col[2]], color='green', label='Seconds')
+    ax.axhline(y=level, color='red')
+    ax.set_ylabel(f'Category share, {col[1]}')
+    ax.set_xlabel(f'Category {category_feature}')
+    ax2.set_ylabel(f'{func.capitalize()} {TARGET_FEATURE} per category')
+    ax.grid(False)
+    ax2.grid(False)
+    plt.show()
+
+
+def group_rare_labels(full_data, category_feature, level=5):
+
+    category_series = full_data[category_feature].value_counts(True) * 100
+    category_series = category_series[category_series > level]
+
+    category_list = list(category_series.index)
+
+    full_data[category_feature] = full_data[category_feature].apply(lambda x: x if x in category_list else 'RARE')
+
+    return full_data
