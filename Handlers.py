@@ -93,12 +93,17 @@ def get_columns_isnull_info_df(df, in_percent=True):
 
     if in_percent:
         cols_null = df.isnull().mean() * 100
+        col_name = '% of null'
     else:
         cols_null = df.isnull().sum()
+        col_name = 'Count null'
 
     cols_with_null = cols_null[cols_null > 0].sort_values(ascending=False)
 
     if len(cols_with_null) > 0:
+        cols_with_null = cols_with_null.to_frame().reset_index()
+        cols_with_null.columns = ['feature', col_name]
+
         return cols_with_null
     else:
         return 'No one null values!'
@@ -378,17 +383,17 @@ def get_logger(path, file):
     return logger
 
 
-def get_X_y_dataset(df, target_feature):
+def get_X_y_dataset(train_data, target_feature):
     """
     Функция для получения из полного датасета двух, тренировочного и датасета, который содержит лишь целевой признак
 
-    :param df: Исходный, полный датасет для тренировки
+    :param train_data: Исходный, полный датасет для тренировки
     :param target_feature: Имя целевого признака
     :return: Возвращает кортеж датасетов (X, y)
     """
 
-    X = df.drop([target_feature], axis=1)
-    y = df[target_feature]
+    X = train_data.drop([target_feature], axis=1)
+    y = train_data[target_feature]
 
     return X, y
 
@@ -433,30 +438,29 @@ def split_full_to_train_and_test(full_data, target_feature):
 
     # Обработанный датасет делим назад на треин и тест части
     train_data = full_data.query('dataset == "train"').drop(['dataset'], axis=1)
-    test_data = full_data.query('dataset == "test"').drop(['dataset'], axis=1)
+    test_data = full_data.query('dataset == "test"').drop(['dataset', target_feature], axis=1)
 
     return train_data, test_data
 
 
-def reformat_columns(df, target_feature):
+def reformat_columns(full_data, target_feature):
     """
     Функция реформатирует порядок расположения признаков. Целевой признак будет теперь в конце
 
-    :param df: Исходный датафрейм
+    :param full_data: Исходный датафрейм
     :param target_feature: Целевой признак, который нужно переместить в конец
     :return:
     """
 
-    columns = list(df.columns)
+    columns = list(full_data.columns)
+    cols_to_end = ['dataset', target_feature]
 
-    if target_feature in columns:
-        columns.remove(target_feature)
-        columns.append(target_feature)
+    for col in cols_to_end:
+        if col in columns:
+            columns.remove(col)
+            columns.append(col)
 
-        # Реформатирую порядок столбцов
-        df = df[columns]
-
-    return df
+    return full_data[columns]
 
 
 def calculate_target_feature_per_category(full_data, category_feature: str, TARGET_FEATURE: str, func='mean'):
@@ -548,10 +552,22 @@ def plot_categories_and_targer(full_data, category_feature, TARGET_FEATURE, func
 
 
 def group_rare_labels(full_data, category_feature, level=5):
+    """
+    Функция для снижения количества категорий в указанном признаке
 
+    :param full_data: Датасет
+    :param category_feature: Имя категориального признака
+    :param level: Уровень отсечения доли признака. По умолчанию 5%.
+    Все что ниже заменяется на RARE.
+    :return: Возвращает измененный датасет
+    """
+
+    # Получаю частоту повторения категорий в датасете в %
     category_series = full_data[category_feature].value_counts(True) * 100
-    category_series = category_series[category_series > level]
 
+    # Оставляю лишь те категории, частота которых выше level
+    category_series = category_series[category_series > level]
+    # Получаю список категорий
     category_list = list(category_series.index)
 
     full_data[category_feature] = full_data[category_feature].apply(lambda x: x if x in category_list else 'RARE')
