@@ -133,7 +133,7 @@ def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
     upper_bound = quartile_3 + (iqr * right)
 
     outliers = df[(x < lower_bound) | (x > upper_bound)]
-    cleaned = df[(x > lower_bound) & (x < upper_bound)]
+    cleaned = df[(x >= lower_bound) & (x <= upper_bound)]
     info = f'Выбросы: {outliers.shape[0]} строк ({outliers.shape[0] / df.shape[0] * 100:.2f}%).'
 
     return info, outliers, cleaned
@@ -149,21 +149,21 @@ def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
     :return: Функция возвращает датафрейм с выбросами и отчищенный от выбросов датафрейм
     """
 
-    current_series = df[feature]
+    x = df[feature]
 
     if log_scale:
         # Если в серии минимальное значение 0,
         # то небходимо добавить 1 во всю серии, т.к. логарифм от 0 невозможен
-        current_series = np.log(current_series + 1)
+        x = np.log(x + 1)
 
-    mu = current_series.mean()
-    sigma = current_series.std()
+    mu = x.mean()
+    sigma = x.std()
 
     lower_bound = mu - left * sigma
     upper_bound = mu + right * sigma
 
-    outliers = df[(current_series < lower_bound) | (current_series > upper_bound)]
-    cleaned = df[(current_series > lower_bound) & (current_series < upper_bound)]
+    outliers = df[(x < lower_bound) | (x > upper_bound)]
+    cleaned = df[(x >= lower_bound) & (x <= upper_bound)]
     info = f'Выбросы: {outliers.shape[0]} строк ({outliers.shape[0] / df.shape[0] * 100:.2f}%).'
 
     return info, outliers, cleaned
