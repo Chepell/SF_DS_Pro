@@ -8,6 +8,7 @@ import seaborn as sns
 from scipy import stats  # библиотека для расчетов
 from scipy.stats import norm
 from scipy.stats import t
+from sklearn import metrics
 
 plt.style.use('ggplot')
 
@@ -137,6 +138,41 @@ def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
     info = f'Выбросы: {outliers.shape[0]} строк ({outliers.shape[0] / df.shape[0] * 100:.2f}%).'
 
     return info, outliers, cleaned
+
+
+def plot_outliers_z_score(df, feature, left=3, right=3):
+    """
+    Функция для построения распределения исходного признака
+    и приведение признака к нормальному, через логарифмирование
+
+    :param df: Исходный датафрейм
+    :param feature: Фитча датафрейма
+    :param left: Множитель для определения левой границы выброса, по умолчанию 3
+    :param right: Множитель для определения правой границы выброса, по умолчанию 3
+    :return: Функция выводит график
+    """
+
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(18, 8))
+
+    # Строим гистограмму
+    sns.histplot(data=df, x=feature, ax=axes[0])
+
+    # Логарифмируем
+    log_feature = np.log(df[feature] + 1)
+
+    mu = log_feature.mean()
+    sigma = log_feature.std()
+
+    left_bound = mu - left * sigma
+    right_bound = mu + right * sigma
+
+    # Строим гистограмму в логарифмическом масштабе
+    sns.histplot(data=log_feature, ax=axes[1])
+
+    # Добавляем вертикальные линии для среднего и 3ех стандартных отклонений влево и вправо от среднего
+    axes[1].axvline(mu, color='k', lw=2)
+    axes[1].axvline(left_bound, color='k', ls='--', lw=2)
+    axes[1].axvline(right_bound, color='k', ls='--', lw=2);
 
 
 def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
@@ -590,3 +626,57 @@ def target_feature_boxplot_per_category(full_data, target_feature, category_feat
     fig = plt.figure(figsize=(18, 14))
     sns.boxplot(data=current_train, y=target_feature, x=category_feature)
     plt.title(target_feature + ' per ' + category_feature)
+
+
+def errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
+    # Визуализируем ошибки
+    fig, ax = plt.subplots(figsize=(16, 10))  # фигура+координатная плоскость
+
+    # Ошибки модели на тренировочной выборке
+    y_train_errors = y_train - y_train_predict
+
+    # Ошибки модели на тестовой выборке
+    y_test_errors = y_test - y_test_predict
+
+    # Для удобства визуализации составим DataFrame из ошибок
+    errors_df = pd.DataFrame(
+        {'Train errors': y_train_errors,
+         'Test errors': y_test_errors
+         }
+    )
+
+    # Строим boxplot для ошибок
+    sns.boxplot(data=errors_df, ax=ax, orient='h')
+    ax.set_xlabel('Model errors')  # название оси абсцисс
+    ax.set_ylabel('Model');  # название оси ординат
+
+    ax.set_title('Prediction Errors')
+
+
+def print_regression_metrics(y_train, y_train_predict, y_test, y_test_predict,
+                             show_R2=True, show_MAE=True, show_MAPE=True, show_MSE=False, show_RMSE=False):
+    print('*** TRAIN ***')
+    if show_R2:
+        print(f'R^2: {metrics.r2_score(y_train, y_train_predict):.3f}')
+    if show_MAE:
+        print(f'MAE: {metrics.mean_absolute_error(y_train, y_train_predict):.3f}')
+    if show_MAPE:
+        print(f'MAPE: {metrics.mean_absolute_percentage_error(y_train, y_train_predict) * 100:.3f}')
+    if show_MSE:
+        print(f'MSE: {metrics.mean_squared_error(y_train, y_train_predict):.3f}')
+    if show_RMSE:
+        print(f'RMSE: {np.sqrt(metrics.mean_squared_error(y_train, y_train_predict)):.3f}')
+
+    print()
+
+    print('*** TEST ***')
+    if show_R2:
+        print(f'R^2: {metrics.r2_score(y_test, y_test_predict):.3f}')
+    if show_MAE:
+        print(f'MAE: {metrics.mean_absolute_error(y_test, y_test_predict):.3f}')
+    if show_MAPE:
+        print(f'MAPE: {metrics.mean_absolute_percentage_error(y_test, y_test_predict) * 100:.3f}')
+    if show_MSE:
+        print(f'MSE: {metrics.mean_squared_error(y_test, y_test_predict):.3f}')
+    if show_RMSE:
+        print(f'RMSE: {np.sqrt(metrics.mean_squared_error(y_test, y_test_predict)):.3f}')
