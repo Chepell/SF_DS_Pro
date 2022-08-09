@@ -628,7 +628,7 @@ def target_feature_boxplot_per_category(full_data, target_feature, category_feat
     plt.title(target_feature + ' per ' + category_feature)
 
 
-def errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
+def plot_errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
     # Визуализируем ошибки
     fig, ax = plt.subplots(figsize=(16, 10))  # фигура+координатная плоскость
 
