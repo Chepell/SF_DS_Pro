@@ -157,8 +157,12 @@ def plot_outliers_z_score(df, feature, left=3, right=3):
     # Строим гистограмму
     sns.histplot(data=df, x=feature, ax=axes[0])
 
-    # Логарифмируем
-    log_feature = np.log(df[feature] + 1)
+    x = df[feature]
+
+    if 0 in x:
+        log_feature = np.log(x + 1)  # Если в массиве есть 0, то добавляю 1.
+    else:
+        log_feature = np.log(x)
 
     mu = log_feature.mean()
     sigma = log_feature.std()
@@ -172,7 +176,10 @@ def plot_outliers_z_score(df, feature, left=3, right=3):
     # Добавляем вертикальные линии для среднего и 3ех стандартных отклонений влево и вправо от среднего
     axes[1].axvline(mu, color='k', lw=2)
     axes[1].axvline(left_bound, color='k', ls='--', lw=2)
-    axes[1].axvline(right_bound, color='k', ls='--', lw=2);
+    axes[1].axvline(right_bound, color='k', ls='--', lw=2)
+
+    plt.tight_layout()
+    plt.show()
 
 
 def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
@@ -190,7 +197,10 @@ def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
     if log_scale:
         # Если в серии минимальное значение 0,
         # то небходимо добавить 1 во всю серии, т.к. логарифм от 0 невозможен
-        x = np.log(x + 1)
+        if 0 in x:
+            x = np.log(x + 1)
+        else:
+            x = np.log(x)
 
     mu = x.mean()
     sigma = x.std()
@@ -627,10 +637,13 @@ def target_feature_boxplot_per_category(full_data, target_feature, category_feat
     sns.boxplot(data=current_train, y=target_feature, x=category_feature)
     plt.title(target_feature + ' per ' + category_feature)
 
+    plt.tight_layout()
+    plt.show()
+
 
 def plot_errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
     # Визуализируем ошибки
-    fig, ax = plt.subplots(figsize=(16, 10))  # фигура+координатная плоскость
+    fig, ax = plt.subplots(figsize=(16, 6))  # фигура+координатная плоскость
 
     # Ошибки модели на тренировочной выборке
     y_train_errors = y_train - y_train_predict
@@ -651,6 +664,9 @@ def plot_errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
     ax.set_ylabel('Model');  # название оси ординат
 
     ax.set_title('Prediction Errors')
+
+    plt.tight_layout()
+    plt.show()
 
 
 def print_regression_metrics(y_train, y_train_predict, y_test, y_test_predict,
