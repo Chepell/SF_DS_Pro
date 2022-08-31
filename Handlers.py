@@ -661,7 +661,7 @@ def plot_errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
     # Строим boxplot для ошибок
     sns.boxplot(data=errors_df, ax=ax, orient='h')
     ax.set_xlabel('Model errors')  # название оси абсцисс
-    ax.set_ylabel('Model');  # название оси ординат
+    ax.set_ylabel('Model')  # название оси ординат
 
     ax.set_title('Prediction Errors')
 
