@@ -8,7 +8,7 @@ import seaborn as sns
 from scipy import stats  # библиотека для расчетов
 from scipy.stats import norm
 from scipy.stats import t
-from sklearn import metrics
+from sklearn import metrics, model_selection
 
 plt.style.use('ggplot')
 
@@ -696,3 +696,53 @@ def print_regression_metrics(y_train, y_train_predict, y_test, y_test_predict,
         print(f'MSE: {metrics.mean_squared_error(y_test, y_test_predict):.3f}')
     if show_RMSE:
         print(f'RMSE: {np.sqrt(metrics.mean_squared_error(y_test, y_test_predict)):.3f}')
+
+
+def plot_learning_curve(model, X, y, cv, scoring='f1', ax=None, title=''):
+    """
+    График кривой обучения
+
+    :param model: Модель машинного обучения
+    :param X: Матрица признаков
+    :param y: Вектор целевого признака
+    :param cv: Объект кросс-валидатора
+    :param scoring: Используемая метрика
+    :param ax: Координатная плоскость, на которой отобразить график
+    :param title: Подпись графика
+
+    :return: Выводит график
+    """
+
+    # Вычисляем координаты для построения кривой обучения
+    train_sizes, train_scores, valid_scores = model_selection.learning_curve(
+        estimator=model,  # модель
+        X=X,  # матрица наблюдений X
+        y=y,  # вектор ответов y
+        cv=cv,  # кросс-валидатор
+        scoring=scoring,  # метрика
+    )
+
+    # Вычисляем среднее значение по фолдам для каждого набора данных
+    train_scores_mean = np.mean(train_scores, axis=1)
+    valid_scores_mean = np.mean(valid_scores, axis=1)
+
+    # Если координатной плоскости не было передано, создаём новую
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(18, 12))
+
+    # Строим кривую обучения по метрикам на тренировочных фолдах
+    ax.plot(train_sizes, train_scores_mean, label="Train")
+    # Строим кривую обучения по метрикам на валидационных фолдах
+    ax.plot(train_sizes, valid_scores_mean, label="Valid")
+
+    # Даём название графику и подписи осям
+    ax.set_title("Learning curve: {}".format(title))
+    ax.set_xlabel("Train data size")
+    ax.set_ylabel("Score")
+
+    # Устанавливаем отметки по оси абсцисс
+    ax.xaxis.set_ticks(train_sizes)
+    # Устанавливаем диапазон оси ординат
+    ax.set_ylim(0, 1)
+    # Отображаем легенду
+    ax.legend()
