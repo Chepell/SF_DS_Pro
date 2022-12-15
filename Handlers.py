@@ -24,19 +24,26 @@ def get_columns_null_info_df(df):
     # создаём пустой список
     unique_list = []
 
-    # пробегаемся по именам столбцов в таблице
+    # Прохожу по именам столбцов в таблице
     for col in df.columns:
-        item = (col, df[col].isnull().sum(), round(df[col].isnull().mean() * 100, 2), df[col].dtype)
-        # добавляем кортеж в список
-        unique_list.append(item)
-        # создаю датафрейм который будет возвращаться
+        count_null = df[col].isnull().sum()
+        if count_null:
+            item = (col, count_null, round(df[col].isnull().mean() * 100, 2), df[col].dtype)
+            # добавляем кортеж (который будет являться строкой датафрейма) в список
+            unique_list.append(item)
+
+    # создаю датафрейм который будет возвращаться
     unique_counts = pd.DataFrame(
         unique_list,
         columns=['Column Name', 'Count Null', '% Null', 'Type']
     )
     # .sort_values(by='Num Unique', ignore_index=True)
 
-    return unique_counts
+    # Возвращаю датафрейм если он не пустой
+    if not unique_counts.empty:
+        return unique_counts
+    else:
+        return 'No one null values!'
 
 
 def get_top_unique_values(df, level=0):
@@ -140,7 +147,7 @@ def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
     return info, outliers, cleaned
 
 
-def plot_outliers_z_score(df, feature, left=3, right=3):
+def plot_outliers_z_score(df, feature, log_scale=False, left=3, right=3):
     """
     Функция для построения распределения исходного признака
     и приведение признака к нормальному, через логарифмирование
@@ -159,19 +166,20 @@ def plot_outliers_z_score(df, feature, left=3, right=3):
 
     x = df[feature]
 
-    if 0 in x:
-        log_feature = np.log(x + 1)  # Если в массиве есть 0, то добавляю 1.
-    else:
-        log_feature = np.log(x)
+    if log_scale:
+        if 0 in x:
+            x = np.log(x + 1)  # Если в массиве есть 0, то добавляю 1.
+        else:
+            x = np.log(x)
 
-    mu = log_feature.mean()
-    sigma = log_feature.std()
+    mu = x.mean()
+    sigma = x.std()
 
     left_bound = mu - left * sigma
     right_bound = mu + right * sigma
 
     # Строим гистограмму в логарифмическом масштабе
-    sns.histplot(data=log_feature, ax=axes[1])
+    sns.histplot(data=x, ax=axes[1])
 
     # Добавляем вертикальные линии для среднего и 3ех стандартных отклонений влево и вправо от среднего
     axes[1].axvline(mu, color='k', lw=2)
