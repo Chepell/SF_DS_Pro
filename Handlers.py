@@ -154,6 +154,7 @@ def plot_outliers_z_score(df, feature, log_scale=False, left=3, right=3):
 
     :param df: Исходный датафрейм
     :param feature: Фитча датафрейма
+    :param log_scale: Нужно ли логарифмировать рассмативаемый признак
     :param left: Множитель для определения левой границы выброса, по умолчанию 3
     :param right: Множитель для определения правой границы выброса, по умолчанию 3
     :return: Функция выводит график
@@ -161,7 +162,7 @@ def plot_outliers_z_score(df, feature, log_scale=False, left=3, right=3):
 
     fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(18, 8))
 
-    # Строим гистограмму
+    # Строим гистограмму признака в исходном масштабе
     sns.histplot(data=df, x=feature, ax=axes[0])
 
     x = df[feature]
