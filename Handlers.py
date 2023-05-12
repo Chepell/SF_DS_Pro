@@ -651,13 +651,22 @@ def target_feature_boxplot_per_category(full_data, target_feature, category_feat
 
 
 def plot_errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
+    """
+    Функция для визуализации ошибки на тренировочной и тестовой выборке.
+    Ошибки в виде вектора разницы между правильными ответами и предсказаниями.
+
+    :param y_train:
+    :param y_train_predict:
+    :param y_test:
+    :param y_test_predict:
+    :return:
+    """
+
     # Визуализируем ошибки
     fig, ax = plt.subplots(figsize=(16, 6))  # фигура+координатная плоскость
 
-    # Ошибки модели на тренировочной выборке
+    # Ошибки модели на тренировочной и тестовой выборке
     y_train_errors = y_train - y_train_predict
-
-    # Ошибки модели на тестовой выборке
     y_test_errors = y_test - y_test_predict
 
     # Для удобства визуализации составим DataFrame из ошибок
@@ -670,7 +679,7 @@ def plot_errors_boxplot(y_train, y_train_predict, y_test, y_test_predict):
     # Строим boxplot для ошибок
     sns.boxplot(data=errors_df, ax=ax, orient='h')
     ax.set_xlabel('Model errors')  # название оси абсцисс
-    ax.set_ylabel('Model')  # название оси ординат
+    ax.set_ylabel('Sampling')  # название оси ординат
 
     ax.set_title('Prediction Errors')
 
