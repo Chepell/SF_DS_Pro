@@ -787,15 +787,15 @@ def plot_confusion_matrix(cm, title):
     
     
 def fB_score(y_true, y_pred, B):
-    """F-мера с возможностью казать значение беты.
+    """F-мера с возможностью указать значение беты.
 
     Args:
-        y_true (_type_): _description_
-        y_pred (_type_): _description_
-        B (_type_): Бета - это вес precision в метрике, чем бета больше, тем precision важнее
+        y_true (_type_): Вектор правильных ответов
+        y_pred (_type_): Вектор предсказаний
+        B (float): Бета - это вес precision в метрике, чем бета больше, тем precision важнее
 
     Returns:
-        _type_: _description_
+        float: Возвращает значение метрики
     """
     precision = metrics.precision_score(y_true, y_pred)
     recall = metrics.recall_score(y_true, y_pred)
