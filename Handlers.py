@@ -18,7 +18,7 @@ def get_columns_null_info_df(df):
     Функция для получиения информации по количеству и % нулевых значнений и типа данных в каждом из столбцов
 
     :param df: Датафрейм для анализа
-    :return: Итоговый датафрейм с разультатами анализа
+    :return: Итоговый датафрейм с разультатамиЫ анализа
     """
 
     # создаём пустой список
@@ -764,3 +764,40 @@ def plot_learning_curve(model, X, y, cv, scoring='f1', ax=None, title=''):
     ax.set_ylim(0, 1)
     # Отображаем легенду
     ax.legend()
+
+
+def plot_confusion_matrix(cm, title):
+    """Функция для визуализации матрицы ошибок с аннотацией ячеек TN, FP, FN, TP
+
+    Args:
+        cm (_type_): confusion_matrix полученная из sklearn.metrics.confusion_matrix
+        title (_type_): Заголовок графика
+    """
+    str_name_array = np.array([['TN = ', 'FP = '], ['FN = ', 'TP = ']])
+    annotation_array = np.core.defchararray.add(str_name_array, cm.astype(str))
+    
+    plt.figure(figsize=(6, 6))
+    sns.heatmap(cm, annot=annotation_array, fmt='', cmap='Blues', cbar=False, robust=True)
+    plt.tick_params(axis='x', bottom=False, top=True, labelbottom=False, labeltop=True)
+    plt.title(title, fontsize=16)
+    plt.gca().xaxis.set_label_position('top')
+    plt.xlabel('y predicted', fontsize=12)
+    plt.ylabel('y true', fontsize=12)
+    plt.show()
+    
+    
+def fB_score(y_true, y_pred, B):
+    """F-мера с возможностью казать значение беты.
+
+    Args:
+        y_true (_type_): _description_
+        y_pred (_type_): _description_
+        B (_type_): Бета - это вес precision в метрике, чем бета больше, тем precision важнее
+
+    Returns:
+        _type_: _description_
+    """
+    precision = metrics.precision_score(y_true, y_pred)
+    recall = metrics.recall_score(y_true, y_pred)
+    
+    return (1 + B**2) * ((precision * recall) / ((B**2 * precision) + recall))
