@@ -9,6 +9,7 @@ from scipy import stats  # библиотека для расчетов
 from scipy.stats import norm
 from scipy.stats import t
 from sklearn import metrics, model_selection
+from statsmodels.tsa.stattools import adfuller
 
 plt.style.use('ggplot')
 
@@ -718,7 +719,7 @@ def print_regression_metrics(y_train, y_train_predict, y_test, y_test_predict,
 
 def plot_learning_curve(model, X, y, cv, scoring='f1', ax=None, title=''):
     """
-    График кривой обучения
+    Фунгкция для построения графика кривой обучения
 
     :param model: Модель машинного обучения
     :param X: Матрица признаков
@@ -738,6 +739,7 @@ def plot_learning_curve(model, X, y, cv, scoring='f1', ax=None, title=''):
         y=y,  # вектор ответов y
         cv=cv,  # кросс-валидатор
         scoring=scoring,  # метрика
+        train_sizes=np.arange(0.1, 1.1, 0.1),  # каждые 10%
     )
 
     # Вычисляем среднее значение по фолдам для каждого набора данных
@@ -775,7 +777,7 @@ def plot_confusion_matrix(cm, title):
     """
     str_name_array = np.array([['TN = ', 'FP = '], ['FN = ', 'TP = ']])
     annotation_array = np.core.defchararray.add(str_name_array, cm.astype(str))
-    
+
     plt.figure(figsize=(6, 6))
     sns.heatmap(cm, annot=annotation_array, fmt='', cmap='Blues', cbar=False, robust=True)
     plt.tick_params(axis='x', bottom=False, top=True, labelbottom=False, labeltop=True)
@@ -784,8 +786,8 @@ def plot_confusion_matrix(cm, title):
     plt.xlabel('y predicted', fontsize=12)
     plt.ylabel('y true', fontsize=12)
     plt.show()
-    
-    
+
+
 def fB_score(y_true, y_pred, B):
     """F-мера с возможностью указать значение беты.
 
@@ -799,5 +801,73 @@ def fB_score(y_true, y_pred, B):
     """
     precision = metrics.precision_score(y_true, y_pred)
     recall = metrics.recall_score(y_true, y_pred)
-    
-    return (1 + B**2) * ((precision * recall) / ((B**2 * precision) + recall))
+
+    return (1 + B ** 2) * ((precision * recall) / ((B ** 2 * precision) + recall))
+
+
+def plot_PR_curve(y_train, y_cv_proba_pred):
+    """
+    Функция для построения PR-кривой
+
+    Args:
+        y_train: Вектор правильных ответов
+        y_cv_proba_pred: Вектор с вероятностями предсказаний для первого класса
+
+    Returns:
+    """
+
+    precision, recall, thresholds = metrics.precision_recall_curve(y_train, y_cv_proba_pred)
+
+    # Вычисляем F1-score при различных threshold
+    f1_scores = (2 * precision * recall) / (precision + recall)
+
+    # Определяем индекс максимума F1
+    idx = np.argmax(f1_scores)
+    # И значение порога вероятности при котором F1 максимален
+    threshold_opt = thresholds[idx]
+
+    # Строим PR-кривую
+    fig, ax = plt.subplots(figsize=(16, 8))  # фигура + координатная плоскость
+
+    # Строим линейный график зависимости precision от recall
+    ax.plot(precision, recall, label='model PR-curve')
+
+    # Отмечаем точку максимума F1
+    ax.scatter(precision[idx], recall[idx], marker='o', color='black', label='Best F1 score')
+
+    # Даём графику название и подписываем оси
+    title_text = 'Precision-recall curve. ' + \
+                 f'Best probably threshold = {threshold_opt:.2f}, F1-Score = {f1_scores[idx]:.2f}. ' + \
+                 f'PR AUC = {metrics.auc(recall, precision):.2f}'
+
+    ax.set_title(title_text, fontsize=16)
+    ax.set_xlabel('Recall')
+    ax.set_ylabel('Precision')
+
+    # Отображаем легенду
+    ax.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def adf(x, threshold=0.05):
+    """
+    Тест стационарности Augmented Dickey-Fuller Test(ADF Test)
+
+    Args:
+        x: Вектор значений переданный для проверки на стационарность
+        threshold: Уровень достоверности, по умолчанию 5%
+
+    Returns:
+    """
+
+    results = adfuller(x)
+
+    print('Test-Statistic:', results[0])
+    print('P-Value:', results[1])
+
+    if results[1] < threshold:
+        print('Stationary!')
+    else:
+        print('Non-Stationary')
+
