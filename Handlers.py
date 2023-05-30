@@ -717,6 +717,31 @@ def print_regression_metrics(y_train, y_train_predict, y_test, y_test_predict,
         print(f'RMSE: {np.sqrt(metrics.mean_squared_error(y_test, y_test_predict)):.3f}')
 
 
+def print_classification_metrics(y_train, y_train_predict, y_test, y_test_predict,
+                             show_accuracy=True, show_precision=True, show_recall=True, show_f1=True):
+    print('*** TRAIN ***')
+    if show_accuracy:
+        print(f'Accuracy: {metrics.accuracy_score(y_train, y_train_predict):.3f}')
+    if show_precision:
+        print(f'Precision: {metrics.precision_score(y_train, y_train_predict):.3f}')
+    if show_recall:
+        print(f'Recall: {metrics.recall_score(y_train, y_train_predict):.3f}')
+    if show_f1:
+        print(f'F1: {metrics.f1_score(y_train, y_train_predict):.3f}')
+
+    print()
+
+    print('*** TEST ***')
+    if show_accuracy:
+        print(f'Accuracy: {metrics.accuracy_score(y_test, y_test_predict):.3f}')
+    if show_precision:
+        print(f'Precision: {metrics.precision_score(y_test, y_test_predict):.3f}')
+    if show_recall:
+        print(f'Recall: {metrics.recall_score(y_test, y_test_predict):.3f}')
+    if show_f1:
+        print(f'F1: {metrics.f1_score(y_test, y_test_predict):.3f}')
+
+
 def plot_learning_curve(model, X, y, cv, scoring='f1', ax=None, title=''):
     """
     Фунгкция для построения графика кривой обучения
@@ -871,3 +896,18 @@ def adf(x, threshold=0.05):
     else:
         print('Non-Stationary')
 
+def profit_margin_for_zero_mo(risk_level, profit_factor):
+    """ Функция для расчета доли прибыльных сделок при которой матожидание нулевое
+    (без учета комиссии и проскальзывания, на самом деле тут уже минус).
+    Так же это значения совпадает с минимальным значением метрики Precision который мне нужно искать.
+
+    Args:
+        risk_level (_type_): уровень риска по сделке
+        profit_factor (_type_): во сколько раз прибыль больше убытка
+
+    Returns:
+        Возвращает долю прибыльных сделок при которой матожидание нулевое
+    """
+    profit_level = risk_level * profit_factor
+
+    return round(risk_level / (profit_level + risk_level), 2)
