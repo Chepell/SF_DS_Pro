@@ -896,6 +896,7 @@ def adf(x, threshold=0.05):
     else:
         print('Non-Stationary')
 
+
 def profit_margin_for_zero_mo(risk_level, profit_factor):
     """ Функция для расчета доли прибыльных сделок при которой матожидание нулевое
     (без учета комиссии и проскальзывания, на самом деле тут уже минус).
@@ -911,3 +912,38 @@ def profit_margin_for_zero_mo(risk_level, profit_factor):
     profit_level = risk_level * profit_factor
 
     return round(risk_level / (profit_level + risk_level), 2)
+
+
+def create_X_y_from_timeseries(df_timeseries, target_col, T, use_ML=True):
+    """
+    Функция для трансформации временного ряда
+
+    :param df_timeseries: Исходный датарфейм в виде времянного ряда
+    :param target_col: Целевой признак
+    :param T: Длина последовательности
+    :param use_ML: False если данные будут использоваться для обучения ANN
+
+    :return: X, y
+    """
+
+    # Define features and targets
+    features = df_timeseries.drop(columns=target_col).values
+    targets = df_timeseries[target_col].values
+
+    # Define data dimension
+    D = features.shape[1]  # Num of columns in input data. Features number.
+    N = features.shape[0] - T  # Num of samples in dataset
+
+    X = np.zeros((N, T, D))
+    y = np.zeros(N)
+
+    for t in range(N):
+        X[t, :, :] = features[t:t + T]
+        y[t] = targets[t + T]
+
+    # Для классических моделей ML 3D матрицу нужно распаковать в 2D.
+    # В ANN нужно отпралять 3D, без распаковки.
+    if use_ML:
+        X = X.reshape(N, T * D)
+
+    return X, y
