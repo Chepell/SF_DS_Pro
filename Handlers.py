@@ -946,4 +946,4 @@ def create_X_y_from_timeseries(df_timeseries, target_col, T, use_ML=True):
     if use_ML:
         X = X.reshape(N, T * D)
 
-    return X, y
+    return X, y, N, D
