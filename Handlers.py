@@ -10,6 +10,7 @@ from scipy.stats import norm
 from scipy.stats import t
 from sklearn import metrics, model_selection
 from statsmodels.tsa.stattools import adfuller
+from scipy.stats import normaltest
 
 plt.style.use('ggplot')
 
@@ -886,15 +887,45 @@ def adf(x, threshold=0.05):
     Returns:
     """
 
-    results = adfuller(x)
+    _, pvalue = adfuller(x)
 
-    print('Test-Statistic:', results[0])
-    print('P-Value:', results[1])
+    print('Test-Statistic:', _)
+    print('P-Value:', pvalue)
 
-    if results[1] < threshold:
-        print('Stationary!')
+    # The null hypothesis of the ADF test is that the time series is non-stationary.
+    H0 = 'Time series is non-stationary'
+    Ha = 'Time series is stationary!'
+
+    if pvalue <= threshold: # Reject the null hypothesis
+        print(Ha)
     else:
-        print('Non-Stationary')
+        print(H0)
+
+
+def pirson_normal_test(x, threshold=0.05):
+    """
+    Тест на нормальное распределение Д’Агостино-Пирсона
+
+    Args:
+        x: Вектор значений переданный для проверки на нормальное распределение
+        threshold: Уровень достоверности, по умолчанию 5%
+
+    Returns:
+    """
+
+    _, pvalue = normaltest(x)
+
+    print('Test on normal distribution:', _)
+    print('P-Value:', pvalue)
+
+    # The null hypothesis is that the sample comes from a normal distribution
+    H0 = 'Normal distribution'
+    Ha = 'NOT a normal distribution!'
+
+    if pvalue <= threshold / 2:  # Reject the null hypothesis
+        print(Ha)
+    else:
+        print(H0)
 
 
 def profit_margin_for_zero_mo(risk_level, profit_factor):
