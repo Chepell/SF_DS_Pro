@@ -10,7 +10,7 @@ from scipy.stats import norm
 from scipy.stats import t
 from sklearn import metrics, model_selection
 from statsmodels.tsa.stattools import adfuller
-from scipy.stats import normaltest
+from scipy.stats import normaltest, shapiro
 
 plt.style.use('ggplot')
 
@@ -927,6 +927,31 @@ def pirson_normal_test(x, threshold=0.05):
     else:
         print(H0)
 
+
+def shapiro_normal_test(x, threshold=0.05):
+    """
+    Тест на нормальное распределение Шапиро — Уилка
+
+    Args:
+        x: Вектор значений переданный для проверки на нормальное распределение
+        threshold: Уровень достоверности, по умолчанию 5%
+
+    Returns:
+    """
+
+    _, p = shapiro(x)
+
+    print('Test on normal distribution:', _)
+    print('P-Value:', p)
+
+    # The null hypothesis is that the sample comes from a normal distribution
+    H0 = 'Normal distribution'
+    Ha = 'NOT a normal distribution!'
+
+    if p <= threshold:  # Reject the null hypothesis
+        print(Ha)
+    else:
+        print(H0)
 
 def profit_margin_for_zero_mo(risk_level, profit_factor):
     """ Функция для расчета доли прибыльных сделок при которой матожидание нулевое
