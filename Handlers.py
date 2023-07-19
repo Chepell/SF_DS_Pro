@@ -794,19 +794,23 @@ def plot_learning_curve(model, X, y, cv, scoring='f1', ax=None, title=''):
     ax.legend()
 
 
-def plot_confusion_matrix(cm, title):
+def plot_confusion_matrix(cm, title, in_pct=False):
     """Функция для визуализации матрицы ошибок с аннотацией ячеек TN, FP, FN, TP
 
     Args:
         cm (_type_): confusion_matrix полученная из sklearn.metrics.confusion_matrix
         title (_type_): Заголовок графика
     """
+
+    if in_pct:
+        cm = (cm / cm.sum() * 100).round(2)
+
     str_name_array = np.array([['TN = ', 'FP = '], ['FN = ', 'TP = ']])
     annotation_array = np.core.defchararray.add(str_name_array, cm.astype(str))
 
     plt.figure(figsize=(6, 6))
     sns.heatmap(cm, annot=annotation_array, fmt='', cmap='Blues', cbar=False, robust=True)
-    plt.tick_params(axis='x', bottom=False, top=True, labelbottom=False, labeltop=True)
+    plt.tick_params(axis='x', bottom=False, top=True, labelbottom=False, labeltop=True, length=0)
     plt.title(title, fontsize=16)
     plt.gca().xaxis.set_label_position('top')
     plt.xlabel('y predicted', fontsize=12)
