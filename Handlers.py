@@ -891,7 +891,7 @@ def adf(x, threshold=0.05):
     Returns:
     """
 
-    _, pvalue = adfuller(x)
+    _, pvalue = adfuller(x)[0], adfuller(x)[1]
 
     print('Test-Statistic:', _)
     print('P-Value:', pvalue)
