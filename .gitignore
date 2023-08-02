@@ -1,9 +1,35 @@
-/venv/
-/.idea/
-/KAGGLE_PROJECT-3/data/submission.csv.zip
-/KAGGLE_PROJECT-3/data/hotels_test.csv.zip
-/KAGGLE_PROJECT-3/data/hotels_train.csv.zip
-/PROJECT-3/data/hotels.csv
-/KAGGLE_PROJECT-3/data/population_by_country_2020.zip
-/KAGGLE_PROJECT-3/data/worldcitiespop.zip
-/KAGGLE_PROJECT-3/sentiment_df.csv
+# Compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyCharm, Visual Studio Code, and other editors
+.idea/
+.vscode/
+
+# OS-specific files
+.DS_Store
+
+# Environment files
+.env
+*venv/
+**/data/
+
