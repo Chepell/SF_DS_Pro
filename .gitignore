@@ -32,8 +32,3 @@ wheels/
 .env
 *venv/
 **/data/
-
-02_TimeSeries/airline_passengers.csv
-02_TimeSeries/perrin-freres-monthly-champagne.csv
-02_TimeSeries/sp500sub.csv
-02_TimeSeries/SPY.csv
