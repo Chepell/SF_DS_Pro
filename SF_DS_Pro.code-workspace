@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"notebook.output.textLineLimit": 100,
+		"python.languageServer": "Pylance"
+	}
+}
