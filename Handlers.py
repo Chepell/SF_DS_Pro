@@ -12,7 +12,11 @@ from sklearn import metrics, model_selection
 from statsmodels.tsa.stattools import adfuller
 from scipy.stats import normaltest, shapiro
 
-plt.style.use("ggplot")
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.style.use('ggplot')
+sns.set_theme('notebook')
 
 
 def get_columns_null_info_df(df):
@@ -156,10 +160,12 @@ def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
 
     lower_bound = quartile_1 - (iqr * left)
     upper_bound = quartile_3 + (iqr * right)
-
-    outliers = df[(x < lower_bound) | (x > upper_bound)]
-    cleaned = df[(x >= lower_bound) & (x <= upper_bound)]
-    info = f"Выбросы: {outliers.shape[0]} строк ({outliers.shape[0] / df.shape[0] * 100:.2f}%)."
+    
+    outliers_mask = (x < lower_bound) | (x > upper_bound)
+    outliers = df[outliers_mask]
+    cleaned = df[~outliers_mask]
+    
+    info = f"Выбросы: {len(outliers)} строк ({len(outliers) / len(df) * 100:.2f}%)."
 
     return info, outliers, cleaned
 
@@ -234,10 +240,12 @@ def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
     lower_bound = mu - left * sigma
     upper_bound = mu + right * sigma
 
-    outliers = df[(x < lower_bound) | (x > upper_bound)]
-    cleaned = df[(x >= lower_bound) & (x <= upper_bound)]
-    info = f"Выбросы: {outliers.shape[0]} строк ({outliers.shape[0] / df.shape[0] * 100:.2f}%)."
-
+    outliers_mask = (x < lower_bound) | (x > upper_bound)
+    outliers = df[outliers_mask]
+    cleaned = df[~outliers_mask]
+    
+    info = f"Выбросы: {len(outliers)} строк ({len(outliers) / len(df) * 100:.2f}%)."
+    
     return info, outliers, cleaned
 
 
