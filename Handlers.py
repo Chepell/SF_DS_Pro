@@ -15,8 +15,8 @@ from scipy.stats import normaltest, shapiro
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-plt.style.use('ggplot')
-sns.set_theme('notebook')
+plt.style.use("ggplot")
+sns.set_theme("notebook")
 
 
 def get_columns_null_info_df(df):
@@ -160,11 +160,11 @@ def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
 
     lower_bound = quartile_1 - (iqr * left)
     upper_bound = quartile_3 + (iqr * right)
-    
+
     outliers_mask = (x < lower_bound) | (x > upper_bound)
     outliers = df[outliers_mask]
     cleaned = df[~outliers_mask]
-    
+
     info = f"Выбросы: {len(outliers)} строк ({len(outliers) / len(df) * 100:.2f}%)."
 
     return info, outliers, cleaned
@@ -243,9 +243,9 @@ def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
     outliers_mask = (x < lower_bound) | (x > upper_bound)
     outliers = df[outliers_mask]
     cleaned = df[~outliers_mask]
-    
+
     info = f"Выбросы: {len(outliers)} строк ({len(outliers) / len(df) * 100:.2f}%)."
-    
+
     return info, outliers, cleaned
 
 
@@ -304,26 +304,23 @@ def QQ_Plots(df, column_name):
     plt.show()  # просмотр графика
 
 
-def Hist_and_Box_Plots(df, column_name, bins=30):
+def Box_and_Hist_Plots(df, feature):
     """
     Функция для построения диаграммы распределения и коробки с усами
     для оценки нормальности распределения и поиска выбросов
 
     :param df: Исходный датафрейм
-    :param column_name: Имя признака для анализа
-    :param bins: Количество групп по умолчанию 30
+    :param feature: Имя признака для анализа
     :return: Выводит график
     """
 
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(18, 8))
-    axes[0].ticklabel_format(style="plain", axis="x")
-    histplot = sns.histplot(data=df, x=column_name, bins=bins, ax=axes[0])
+    fig, ax = plt.subplots(2, sharex=True, gridspec_kw={"height_ratios": (0.50, 0.85)})
 
-    histplot.set_title(f"{column_name} Histogram")
-    axes[1].ticklabel_format(style="plain", axis="x")
-    boxplot = sns.boxplot(data=df, x=column_name, ax=axes[1])
-    boxplot.set_title(f"{column_name} Boxplot")
+    sns.boxplot(x=df[feature], ax=ax[0])
+    sns.histplot(data=df, x=feature, ax=ax[1])
 
+    ax[0].set(xlabel="")
+    ax[0].set_title(f"Box-Plot and Distribution for {feature}")
     plt.tight_layout()
     plt.show()
 
