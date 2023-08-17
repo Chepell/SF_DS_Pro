@@ -305,14 +305,22 @@ def QQ_Plots(df, column_name):
     plt.show()  # просмотр графика
 
 
-def Box_and_Hist_Plots(df, feature):
+def box_and_hist_plots(df, feature):
     """
-    Функция для построения диаграммы распределения и коробки с усами
-    для оценки нормальности распределения и поиска выбросов
+    Generate a combined plot with a box plot at the top
+    and a histogram at the bottom for a given feature.
 
-    :param df: Исходный датафрейм
-    :param feature: Имя признака для анализа
-    :return: Выводит график
+    Parameters:
+    -----------
+    df : DataFrame
+        Input dataframe containing the data.
+    feature : str
+        The name of the column to visualize.
+
+    Returns:
+    --------
+    None
+        Displays the combined plot.
     """
 
     fig, ax = plt.subplots(2, sharex=True, gridspec_kw={"height_ratios": (0.50, 0.85)})
@@ -585,30 +593,42 @@ def calculate_target_feature_per_category(
 
 def plot_categories(full_data, category_feature, level=5):
     """
-    Столбчатая диаграмма для категориального признака
+    Visualize the distribution of a categorical feature as percentages.
+    The plot also includes a horizontal line to indicate a threshold or benchmark.
 
-    :param full_data: Датасет
-    :param category_feature: Имя признака
-    :param level: Уровень значимости в %
+    Parameters:
+    -----------
+    full_data : DataFrame
+        Input dataframe containing the data.
+    category_feature : str
+        The name of the categorical column to visualize.
+    level : int or float, default=5
+        Value at which to draw a horizontal benchmark line.
 
-    :return: Выводит график
+    Returns:
+    --------
+    None
+        Displays the bar chart.
     """
 
+    # Compute the percentage distribution of the categories
     df = pd.DataFrame(
         full_data[category_feature].value_counts(True) * 100
     ).reset_index()
-    df.columns = [category_feature, "%"]  # переименовываю столбцы
+    df.columns = [category_feature, "%"]  # Rename columns
 
-    col = df.columns
-
+    # Define figure and axis for the plot
     fig, ax = plt.subplots(figsize=(16, 8))
+
+    # Define x-ticks and rotate them for better visibility
     plt.xticks(df.index, df[category_feature], rotation=90)
 
-    ax.bar(df.index, df[col[1]], color="lightgrey")
+    # Plot the distribution of categories
+    ax.bar(df.index, df["%"], color="lightgrey")
     ax.axhline(y=level, color="red")
-    ax.set_ylabel(f"Category share, {col[1]}")
+    ax.set_ylabel(f"Category share, %")
     ax.set_xlabel(f"Category {category_feature}")
-    ax.grid(False)
+    ax.grid(False)  # Turn off the grid lines
     plt.show()
 
 
@@ -1087,24 +1107,65 @@ def create_X_y_from_timeseries(df_timeseries, target_col, T, use_ML=True):
 
 
 class StateLessTransformer(BaseEstimator, TransformerMixin):
-    """_summary_
-
-    Args:
-        BaseEstimator (_type_): _description_
-        TransformerMixin (_type_): _description_
     """
-    
+    Apply a list of stateless transformation functions to the input data.
+    Stateless means that the transformations don't learn any parameters
+    from the training data and don't depend on it.
+
+    Parameters:
+    -----------
+    transform_funcs : callable or list of callables
+        Function or list of functions to apply to the input data.
+        Each function should take a dataframe as its sole argument and
+        return a transformed dataframe.
+
+    Attributes:
+    -----------
+    transform_funcs : list of callables
+        List of transformation functions to apply.
+    """
+
     def __init__(self, transform_funcs):
         # Ensure transform_funcs is a list, even if a single function is passed
         if not isinstance(transform_funcs, list):
             transform_funcs = [transform_funcs]
-
         self.transform_funcs = transform_funcs
 
     def fit(self, X, y=None):
+        """
+        No fitting necessary for stateless transformations.
+        Just return self.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input data.
+        y : Series or DataFrame, default=None
+            Target variable. Not used in this transformer.
+
+        Returns:
+        --------
+        self : object
+            Returns the instance itself.
+        """
         return self
 
     def transform(self, X, y=None):
+        """
+        Apply the provided transformation functions to the input data.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input data to transform.
+        y : Series or DataFrame, default=None
+            Target variable. Not used in this transformer.
+
+        Returns:
+        --------
+        DataFrame
+            Transformed data.
+        """
         X_transformed = X
         for func in self.transform_funcs:
             X_transformed = func(X_transformed)
@@ -1112,13 +1173,27 @@ class StateLessTransformer(BaseEstimator, TransformerMixin):
 
 
 class PeriodicTransformer(BaseEstimator, TransformerMixin):
-    """_summary_
-
-    Args:
-        BaseEstimator (_type_): _description_
-        TransformerMixin (_type_): _description_
     """
-    
+    Transform a periodic feature into its sine and cosine transformations for
+    linear models to better understand periodic relationships.
+
+    Parameters:
+    -----------
+    feature : str
+        Name of the column in the DataFrame to be transformed.
+    drop_origin : bool, default=True
+        Whether to drop the original column after transformation.
+
+    Attributes:
+    -----------
+    sin_name : str
+        Name of the sine transformed feature column.
+    cos_name : str
+        Name of the cosine transformed feature column.
+    max_value : float
+        Maximum value of the feature column. Used for normalization.
+    """
+
     def __init__(self, feature, drop_origin=True):
         self.feature = feature
         self.drop_origin = drop_origin
@@ -1127,15 +1202,45 @@ class PeriodicTransformer(BaseEstimator, TransformerMixin):
         self.max_value = None
 
     def fit(self, X, y=None):
+        """
+        Compute necessary attributes for transformation.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input data.
+        y : Series, default=None
+            Target variable. Not used in this transformer.
+
+        Returns:
+        --------
+        self : object
+            Returns the instance itself.
+        """
         # Generate the names for the new sin and cos features based on the original feature name
-        self.sin_name = self.feature + '_sin'
-        self.cos_name = self.feature + '_cos'
+        self.sin_name = self.feature + "_sin"
+        self.cos_name = self.feature + "_cos"
 
         # Find the maximum value of the feature to use for normalization in the transform step
         self.max_value = X[self.feature].max()
         return self
 
     def transform(self, X, y=None):
+        """
+        Apply the sine and cosine transformation to the feature.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input data.
+        y : Series, default=None
+            Target variable. Not used in this transformer.
+
+        Returns:
+        --------
+        DataFrame
+            Transformed data.
+        """
         # Create a copy of the input DataFrame to avoid modifying the original data
         X = X.copy()
 
