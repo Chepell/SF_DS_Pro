@@ -9,14 +9,15 @@ from scipy import stats  # библиотека для расчетов
 from scipy.stats import norm
 from scipy.stats import t
 from sklearn import metrics, model_selection
+from sklearn.base import BaseEstimator, TransformerMixin
 from statsmodels.tsa.stattools import adfuller
 from scipy.stats import normaltest, shapiro
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-plt.style.use('ggplot')
-sns.set_theme('notebook')
+plt.style.use("ggplot")
+sns.set_theme("notebook")
 
 
 def get_columns_null_info_df(df):
@@ -160,11 +161,11 @@ def outliers_iqr(df, feature, log_scale=False, left=1.5, right=1.5):
 
     lower_bound = quartile_1 - (iqr * left)
     upper_bound = quartile_3 + (iqr * right)
-    
+
     outliers_mask = (x < lower_bound) | (x > upper_bound)
     outliers = df[outliers_mask]
     cleaned = df[~outliers_mask]
-    
+
     info = f"Выбросы: {len(outliers)} строк ({len(outliers) / len(df) * 100:.2f}%)."
 
     return info, outliers, cleaned
@@ -243,9 +244,9 @@ def outliers_z_score(df, feature, log_scale=False, left=3, right=3):
     outliers_mask = (x < lower_bound) | (x > upper_bound)
     outliers = df[outliers_mask]
     cleaned = df[~outliers_mask]
-    
+
     info = f"Выбросы: {len(outliers)} строк ({len(outliers) / len(df) * 100:.2f}%)."
-    
+
     return info, outliers, cleaned
 
 
@@ -1086,3 +1087,67 @@ def create_X_y_from_timeseries(df_timeseries, target_col, T, use_ML=True):
         X = X.reshape(N, T * D)
 
     return X, y, N, D
+
+
+class StateLessTransformer(BaseEstimator, TransformerMixin):
+    """_summary_
+
+    Args:
+        BaseEstimator (_type_): _description_
+        TransformerMixin (_type_): _description_
+    """
+    
+    def __init__(self, transform_funcs):
+        # Ensure transform_funcs is a list, even if a single function is passed
+        if not isinstance(transform_funcs, list):
+            transform_funcs = [transform_funcs]
+
+        self.transform_funcs = transform_funcs
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        X_transformed = X
+        for func in self.transform_funcs:
+            X_transformed = func(X_transformed)
+        return X_transformed
+
+
+class PeriodicTransformer(BaseEstimator, TransformerMixin):
+    """_summary_
+
+    Args:
+        BaseEstimator (_type_): _description_
+        TransformerMixin (_type_): _description_
+    """
+    
+    def __init__(self, feature, drop_origin=True):
+        self.feature = feature
+        self.drop_origin = drop_origin
+        self.sin_name = None
+        self.cos_name = None
+        self.max_value = None
+
+    def fit(self, X, y=None):
+        # Generate the names for the new sin and cos features based on the original feature name
+        self.sin_name = self.feature + '_sin'
+        self.cos_name = self.feature + '_cos'
+
+        # Find the maximum value of the feature to use for normalization in the transform step
+        self.max_value = X[self.feature].max()
+        return self
+
+    def transform(self, X, y=None):
+        # Create a copy of the input DataFrame to avoid modifying the original data
+        X = X.copy()
+
+        # Create the sin and cos transformations of the feature
+        # The feature values are normalized by the max value and then multiplied by 2π to get the full circle
+        X[self.sin_name] = np.sin(X[self.feature] / self.max_value * 2 * np.pi)
+        X[self.cos_name] = np.cos(X[self.feature] / self.max_value * 2 * np.pi)
+
+        # Drop the original feature as it's replaced by its sin and cos transformations
+        if self.drop_origin:
+            X.drop(columns=self.feature, inplace=True)
+        return X
