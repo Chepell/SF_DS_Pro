@@ -1253,3 +1253,61 @@ class PeriodicTransformer(BaseEstimator, TransformerMixin):
         if self.drop_origin:
             X.drop(columns=self.feature, inplace=True)
         return X
+
+
+class MeanNormalizationScaler(BaseEstimator, TransformerMixin):
+    """
+    Perform mean normalization on data.
+    The transformer scales features based on their mean and range (max-min).
+
+    Attributes:
+    -----------
+    means : Series
+        Means of each feature computed during fitting.
+    ranges : Series
+        Ranges (max-min) of each feature computed during fitting.
+    """
+
+    def __init__(self):
+        self.means = None
+        self.ranges = None
+
+    def fit(self, X, y=None):
+        """
+        Compute means and ranges of features.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input data.
+        y : Series or DataFrame, default=None
+            Target variable. Not used in this transformer.
+
+        Returns:
+        --------
+        self : object
+            Returns the instance itself.
+        """
+        self.means = X.mean()
+        self.ranges = X.max() - X.min()
+        return self
+
+    def transform(self, X, y=None):
+        """
+        Apply mean normalization scaling on data.
+
+        Parameters:
+        -----------
+        X : DataFrame
+            Input data to transform.
+        y : Series or DataFrame, default=None
+            Target variable. Not used in this transformer.
+
+        Returns:
+        --------
+        DataFrame
+            Scaled data.
+        """
+        X_transform = X.copy()
+        X_transform = (X_transform - self.means) / self.ranges
+        return X_transform
