@@ -558,13 +558,13 @@ def reformat_columns(full_data, target_feature):
 
 
 def calculate_target_feature_per_category(
-    full_data, category_feature: str, TARGET_FEATURE: str, func="mean"
+    data, feature: str, TARGET_FEATURE: str, func="mean"
 ):
     """
     Функция для расчета среднего (мединаы, СКО) значения для целеового по каждой категории выбранного признака
 
-    :param full_data: Полный датасет
-    :param category_feature: Имя категориального признака в разрезе которого нужно посчитать целевой
+    :param data: Полный датасет
+    :param feature: Имя категориального признака в разрезе которого нужно посчитать целевой
     :param TARGET_FEATURE: Имя целевого признака
     :param func: Функция по которой проводить аггрегацию. mean, median, std
     :return:
@@ -572,29 +572,32 @@ def calculate_target_feature_per_category(
 
     # Из датасета получение датафрейма категорий с их долей в % ко всему датасету
     df = pd.DataFrame(
-        full_data[category_feature].value_counts(True) * 100
-    ).reset_index()
-    df.columns = [category_feature, "%"]  # переименовываю столбцы
+        data[feature].value_counts(True) / len(data) * 100).reset_index()
+    df.columns = [feature, "%"]  # переименовываю столбцы
 
     # Проверяю, что передан полный датасет, в котором есть признак отвечающий за разделение выборок на треин и тест
-    if "dataset" in full_data.columns:
+    if "dataset" in data.columns:
         # Получаю треин датасет в котором есть значения целевого признака
-        train_data = full_data.query('dataset == "train"').drop(["dataset"], axis=1)
+        train_data = data.query('dataset == "train"').drop(["dataset"], axis=1)
     else:
-        train_data = full_data
+        train_data = data
 
     # Группирую по категориям получаю агрегированное по указанной функции значения целевого признака
     group_category = (
-        train_data.groupby([category_feature])[TARGET_FEATURE].agg([func]).reset_index()
+        train_data.groupby([feature])[TARGET_FEATURE].agg([func]).reset_index()
     )
 
-    return df.merge(group_category, on=category_feature, how="left")
+    return df.merge(group_category, on=feature, how="left")
 
 
-def plot_categories(full_data, category_feature, level=5):
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
+def plot_categories(data, feature, level=5):
     """
     Visualize the distribution of a categorical feature as percentages.
-    The plot also includes a horizontal line to indicate a threshold or benchmark.
+    Categories exceeding a certain level are highlighted in green.
 
     Parameters:
     -----------
@@ -603,7 +606,8 @@ def plot_categories(full_data, category_feature, level=5):
     category_feature : str
         The name of the categorical column to visualize.
     level : int or float, default=5
-        Value at which to draw a horizontal benchmark line.
+        Value at which to draw a horizontal benchmark line and also used
+        as a threshold to color bars in green if they exceed this value.
 
     Returns:
     --------
@@ -612,35 +616,37 @@ def plot_categories(full_data, category_feature, level=5):
     """
 
     # Compute the percentage distribution of the categories
-    df = pd.DataFrame(
-        full_data[category_feature].value_counts(True) * 100
-    ).reset_index()
-    df.columns = [category_feature, "%"]  # Rename columns
+    df = pd.DataFrame(data[feature].value_counts() / len(data) * 100).reset_index()
+    df.columns = [feature, "%"]  # Rename columns
 
     # Define figure and axis for the plot
     fig, ax = plt.subplots(figsize=(16, 8))
 
     # Define x-ticks and rotate them for better visibility
-    plt.xticks(df.index, df[category_feature], rotation=90)
+    plt.xticks(df.index, df[feature], rotation=90)
 
-    # Plot the distribution of categories
-    ax.bar(df.index, df["%"], color="lightgrey")
+    # Create a list of colors based on the condition
+    bar_colors = ["green" if pct > level else "lightgrey" for pct in df["%"]]
+
+    # Plot the distribution of categories with desired colors
+    ax.bar(df.index, df["%"], color=bar_colors)
+
     ax.axhline(y=level, color="red")
     ax.set_ylabel(f"Category share, %")
-    ax.set_xlabel(f"Category {category_feature}")
+    ax.set_xlabel(f"Category {feature}")
     ax.grid(False)  # Turn off the grid lines
     plt.show()
 
 
 def plot_categories_and_targer(
-    full_data, category_feature, TARGET_FEATURE, func="mean", level=5
+    data, feature, TARGET_FEATURE, func="mean", level=5
 ):
     """
     Столбчатая диаграмма для категориального признака со средним (медиана, СКО)
     значением целевого признака для каждой категории
 
-    :param full_data: Датасет
-    :param category_feature: Имя категориального признака
+    :param data: Датасет
+    :param feature: Имя категориального признака
     :param TARGET_FEATURE: Имя целевого признака
     :param func: Функция по которой проводить аггрегацию. mean, median, std
     :param level: Уровень отсечения доли признака. По умолчанию 5%.
@@ -649,20 +655,20 @@ def plot_categories_and_targer(
     """
 
     df = calculate_target_feature_per_category(
-        full_data, category_feature, TARGET_FEATURE, func
+        data, feature, TARGET_FEATURE, func
     )
 
     col = df.columns
 
     fig, ax = plt.subplots(figsize=(16, 8))
-    plt.xticks(df.index, df[category_feature], rotation=90)
+    plt.xticks(df.index, df[feature], rotation=90)
 
     ax2 = ax.twinx()
     ax.bar(df.index, df[col[1]], color="lightgrey")
     ax2.plot(df.index, df[col[2]], color="green", label="Seconds")
     ax.axhline(y=level, color="red")
     ax.set_ylabel(f"Category share, {col[1]}")
-    ax.set_xlabel(f"Category {category_feature}")
+    ax.set_xlabel(f"Category {feature}")
     ax2.set_ylabel(f"{func.capitalize()} {TARGET_FEATURE} per category")
     ax.grid(False)
     ax2.grid(False)
