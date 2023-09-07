@@ -10,19 +10,25 @@ from scipy.stats import norm
 from scipy.stats import t
 from sklearn import metrics, model_selection
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.ensemble import IsolationForest
+
 from statsmodels.tsa.stattools import adfuller
 from scipy.stats import normaltest, shapiro
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-plt.style.use("ggplot")
-sns.set_theme("notebook")
+import winsound
+
+
+# plt.style.use("ggplot")
+# sns.set_theme("notebook")
 
 
 def get_columns_null_info_df(df):
     """
-    Функция для получиения информации по количеству и % нулевых значнений и типа данных в каждом из столбцов
+    Функция для получения информации по количеству и % нулевых значнений и типа данных в каждом из столбцов
 
     :param df: Датафрейм для анализа
     :return: Итоговый датафрейм с разультатамиЫ анализа
@@ -323,13 +329,22 @@ def box_and_hist_plots(df, feature):
         Displays the combined plot.
     """
 
-    fig, ax = plt.subplots(2, sharex=True, gridspec_kw={"height_ratios": (0.50, 0.85)})
+    fig, ax = plt.subplots(
+        2, figsize=(10, 6), sharex=True, gridspec_kw={"height_ratios": (0.50, 0.85)}
+    )
 
     sns.boxplot(x=df[feature], ax=ax[0])
-    sns.histplot(data=df, x=feature, ax=ax[1])
+    sns.histplot(data=df, x=feature, kde=True, ax=ax[1])
 
     ax[0].set(xlabel="")
-    ax[0].set_title(f"Box-Plot and Distribution for {feature}")
+    ax[0].set_title(f"Box-Plot and Distribution for '{feature}'", fontsize=12)
+
+    plt.ylabel("Count", fontsize=10)
+    plt.xlabel("Class", fontsize=10)
+
+    plt.xticks(fontsize=9)
+    plt.yticks(fontsize=9)
+
     plt.tight_layout()
     plt.show()
 
@@ -348,7 +363,7 @@ def null_heatmap_plot(df):
     cols_null_perc = cols_null_perc.index.to_list()
 
     colors = ["blue", "yellow"]
-    fig = plt.figure(figsize=(16, 10))
+    fig = plt.figure(figsize=(5, 15))
     ax = sns.heatmap(df[cols_null_perc].isnull(), cmap=colors, cbar=False)
     ax.set_title("Null Heatmap")
 
@@ -537,24 +552,33 @@ def split_full_to_train_and_test(full_data, target_feature):
     return train_data, test_data
 
 
-def reformat_columns(full_data, target_feature):
+def reformat_columns(df, target_feature):
     """
-    Функция реформатирует порядок расположения признаков. Целевой признак будет теперь в конце
+    Reorder the columns of a DataFrame so that the target feature is the last column.
 
-    :param full_data: Исходный датафрейм
-    :param target_feature: Целевой признак, который нужно переместить в конец
-    :return:
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The DataFrame containing all features, including the target feature.
+    target_feature : str
+        The name of the target feature column.
+
+    Returns:
+    --------
+    reordered_df : pandas.DataFrame
+        The DataFrame with columns reordered so that the target feature is the last column.
     """
 
-    columns = list(full_data.columns)
-    cols_to_end = ["dataset", target_feature]
+    # Create a list of column names excluding the target feature
+    cols = [col for col in df.columns if col != target_feature]
 
-    for col in cols_to_end:
-        if col in columns:
-            columns.remove(col)
-            columns.append(col)
+    # Append the target feature to the end of the list
+    cols.append(target_feature)
 
-    return full_data[columns]
+    # Reorder the DataFrame columns
+    reordered_df = df[cols]
+
+    return reordered_df
 
 
 def calculate_target_feature_per_category(
@@ -571,8 +595,7 @@ def calculate_target_feature_per_category(
     """
 
     # Из датасета получение датафрейма категорий с их долей в % ко всему датасету
-    df = pd.DataFrame(
-        data[feature].value_counts(True) / len(data) * 100).reset_index()
+    df = pd.DataFrame(data[feature].value_counts(True) / len(data) * 100).reset_index()
     df.columns = [feature, "%"]  # переименовываю столбцы
 
     # Проверяю, что передан полный датасет, в котором есть признак отвечающий за разделение выборок на треин и тест
@@ -592,6 +615,83 @@ def calculate_target_feature_per_category(
 
 import pandas as pd
 import matplotlib.pyplot as plt
+
+
+def plot_corr_heatmap(df, decimal_places=2):
+    """
+    Plot a correlation heatmap for the given DataFrame.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The input DataFrame whose correlation matrix needs to be visualized.
+    decimal_places : int, optional
+        The number of decimal places to show in the annotations. Default is 2.
+    """
+
+    # Compute correlation matrix
+    corr_df = df.corr()
+
+    # Create a mask for the upper triangle
+    mask = np.triu(np.ones_like(corr_df, dtype=bool))
+
+    # Set up the matplotlib figure
+    fig, ax = plt.subplots(figsize=(10, 9))
+
+    # Plotting the heatmap with a mask, using a diverging color map
+    ax = sns.heatmap(
+        corr_df,
+        annot=True,
+        annot_kws={"size": 8},
+        vmin=-1,
+        vmax=1,
+        square=True,
+        fmt=f".{decimal_places}f",
+        cmap="coolwarm",
+        mask=mask,
+        cbar=True,
+    )
+
+    # Set the fontsize for the colorbar
+    cbar = ax.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=8)
+
+    # Setting title and font size for x and y tick labels
+    ax.set_title("Correlation Heatmap", fontsize=12)
+    ax.tick_params(axis="x", labelsize=8)
+    ax.tick_params(axis="y", labelsize=8)
+
+    # Setting font size for x and y axis labels
+    ax.set_xlabel(ax.get_xlabel(), fontsize=10)
+    ax.set_ylabel(ax.get_ylabel(), fontsize=10)
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+def plot_pairplot(df):
+    """
+    Plot pair-wise relationships in a dataset using Seaborn's pairplot.
+
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The input DataFrame to be visualized using pairplot.
+    """
+
+    # Create the pairplot
+    g = sns.pairplot(data=df, corner=True, plot_kws={"s": 10})
+
+    # Adjusting the fontsize for ticks and labels
+    for ax in g.axes.flat:
+        if ax:  # Check if the axis is not None
+            ax.tick_params(axis="both", labelsize=8)  # Adjust tick fontsize
+            ax.set_xlabel(ax.get_xlabel(), fontsize=10)  # Adjust x-axis label fontsize
+            ax.set_ylabel(ax.get_ylabel(), fontsize=10)  # Adjust y-axis label fontsize
+
+    plt.tight_layout()
+    plt.show()
 
 
 def plot_categories(data, feature, level=5):
@@ -638,9 +738,7 @@ def plot_categories(data, feature, level=5):
     plt.show()
 
 
-def plot_categories_and_targer(
-    data, feature, TARGET_FEATURE, func="mean", level=5
-):
+def plot_categories_and_targer(data, feature, TARGET_FEATURE, func="mean", level=5):
     """
     Столбчатая диаграмма для категориального признака со средним (медиана, СКО)
     значением целевого признака для каждой категории
@@ -654,9 +752,7 @@ def plot_categories_and_targer(
     :return: Выводит график на экран
     """
 
-    df = calculate_target_feature_per_category(
-        data, feature, TARGET_FEATURE, func
-    )
+    df = calculate_target_feature_per_category(data, feature, TARGET_FEATURE, func)
 
     col = df.columns
 
@@ -802,6 +898,9 @@ def print_regression_metrics(
         )
 
 
+from sklearn import metrics
+
+
 def print_classification_metrics(
     y_train,
     y_train_predict,
@@ -811,28 +910,49 @@ def print_classification_metrics(
     show_precision=True,
     show_recall=True,
     show_f1=True,
+    show_roc_auc=True,
+    average="binary",
 ):
+    """
+    Print classification metrics for both training and test data.
+
+    Parameters:
+    - y_train: Ground truth labels for training data.
+    - y_train_predict: Predicted labels for training data.
+    - y_test: Ground truth labels for test data.
+    - y_test_predict: Predicted labels for test data.
+    - show_accuracy, show_precision, show_recall, show_f1: Booleans to toggle printing of respective metrics.
+    - average: Method to compute multiclass classification metrics. Options include 'binary', 'micro', 'macro', 'weighted', 'samples'.
+
+    Returns:
+    None. This function only prints metrics.
+    """
+
+    def print_metrics(y_true, y_pred):
+        """
+        Helper function to print classification metrics for given true and predicted labels.
+        """
+        if show_accuracy:
+            print(f"Accuracy: {metrics.accuracy_score(y_true, y_pred):.3f}")
+        if show_precision:
+            print(
+                f"Precision: {metrics.precision_score(y_true, y_pred, average=average):.3f}"
+            )
+        if show_recall:
+            print(
+                f"Recall: {metrics.recall_score(y_true, y_pred, average=average):.3f}"
+            )
+        if show_f1:
+            print(f"F1: {metrics.f1_score(y_true, y_pred, average=average):.3f}")
+        
+        if show_roc_auc:
+            print(f"ROC AUC: {metrics.roc_auc_score(y_true, y_pred):.3f}")
+            
+
     print("*** TRAIN ***")
-    if show_accuracy:
-        print(f"Accuracy: {metrics.accuracy_score(y_train, y_train_predict):.3f}")
-    if show_precision:
-        print(f"Precision: {metrics.precision_score(y_train, y_train_predict):.3f}")
-    if show_recall:
-        print(f"Recall: {metrics.recall_score(y_train, y_train_predict):.3f}")
-    if show_f1:
-        print(f"F1: {metrics.f1_score(y_train, y_train_predict):.3f}")
-
-    print()
-
-    print("*** TEST ***")
-    if show_accuracy:
-        print(f"Accuracy: {metrics.accuracy_score(y_test, y_test_predict):.3f}")
-    if show_precision:
-        print(f"Precision: {metrics.precision_score(y_test, y_test_predict):.3f}")
-    if show_recall:
-        print(f"Recall: {metrics.recall_score(y_test, y_test_predict):.3f}")
-    if show_f1:
-        print(f"F1: {metrics.f1_score(y_test, y_test_predict):.3f}")
+    print_metrics(y_train, y_train_predict)
+    print("\n*** TEST ***")
+    print_metrics(y_test, y_test_predict)
 
 
 def plot_learning_curve(model, X, y, cv, scoring="f1", ax=None, title=""):
@@ -887,30 +1007,45 @@ def plot_learning_curve(model, X, y, cv, scoring="f1", ax=None, title=""):
 
 
 def plot_confusion_matrix(cm, title, in_pct=False):
-    """Функция для визуализации матрицы ошибок с аннотацией ячеек TN, FP, FN, TP
-
-    Args:
-        cm (_type_): confusion_matrix полученная из sklearn.metrics.confusion_matrix
-        title (_type_): Заголовок графика
     """
+    Plots a confusion matrix using Seaborn's heatmap.
 
+    Parameters:
+    - cm: A confusion matrix (2x2 for binary classification).
+    - title: Title for the plot.
+    - in_pct: Boolean indicating if values should be displayed as percentages.
+
+    Returns:
+    None. Displays the plot.
+    """
+    # Convert matrix values to percentage if required
     if in_pct:
-        cm = (cm / cm.sum() * 100).round(2)
+        cm_percentage = (cm / cm.sum() * 100).round(2)
+    else:
+        cm_percentage = cm
 
-    str_name_array = np.array([["TN = ", "FP = "], ["FN = ", "TP = "]])
-    annotation_array = np.core.defchararray.add(str_name_array, cm.astype(str))
+    # Prepare annotation labels for the matrix
+    label_names = np.array([["TN = ", "FP = "], ["FN = ", "TP = "]])
+    annotations = np.core.defchararray.add(label_names, cm_percentage.astype(str))
 
+    # Create a heatmap for the confusion matrix
     plt.figure(figsize=(6, 6))
     sns.heatmap(
-        cm, annot=annotation_array, fmt="", cmap="Blues", cbar=False, robust=True
+        cm_percentage, annot=annotations, fmt="", cmap="Blues", cbar=False, robust=True
     )
+
+    # Adjust tick settings for better visualization
     plt.tick_params(
         axis="x", bottom=False, top=True, labelbottom=False, labeltop=True, length=0
     )
+
+    # Add title and labels
     plt.title(title, fontsize=16)
     plt.gca().xaxis.set_label_position("top")
-    plt.xlabel("y predicted", fontsize=12)
-    plt.ylabel("y true", fontsize=12)
+    plt.xlabel("Predicted Label", fontsize=12)
+    plt.ylabel("True Label", fontsize=12)
+
+    # Display the plot
     plt.show()
 
 
@@ -1060,56 +1195,70 @@ def shapiro_normal_test(x, threshold=0.05):
         print(H0)
 
 
-def profit_margin_for_zero_mo(risk_level, profit_factor):
-    """Функция для расчета доли прибыльных сделок при которой матожидание нулевое
-    (без учета комиссии и проскальзывания, на самом деле тут уже минус).
-    Так же это значения совпадает с минимальным значением метрики Precision который мне нужно искать.
+def profit_margin_for_zero_mo(profit_factor):
+    """
+    Calculate the profit margin for zero months operation.
+    
+    Parameters:
+    - profit_factor (float): The profit factor to calculate the margin.
+    
+    Returns:
+    - float: Profit margin, rounded to two decimal places.
+    """
+    
+    # Calculate the profit margin using the provided formula and round it to 2 decimal places
+    return round(1 / (profit_factor + 1), 2)
+
+
+
+def create_X_y_from_timeseries(df_timeseries, target, T, flatten_features=True):
+    """
+    Transforms time series data into a supervised learning format.
 
     Args:
-        risk_level (_type_): уровень риска по сделке
-        profit_factor (_type_): во сколько раз прибыль больше убытка
+    - df_timeseries (pd.DataFrame): DataFrame containing time series data.
+    - target (str): Name of the column to predict.
+    - T (int): Number of time lags to use as features.
+    - flatten_features (bool): If True, flattens the features for traditional ML models.
+                              If False, retains 3D shape suitable for RNNs.
 
     Returns:
-        Возвращает долю прибыльных сделок при которой матожидание нулевое
-    """
-    profit_level = risk_level * profit_factor
-
-    return round(risk_level / (profit_level + risk_level), 2)
-
-
-def create_X_y_from_timeseries(df_timeseries, target_col, T, use_ML=True):
-    """
-    Функция для трансформации временного ряда
-
-    :param df_timeseries: Исходный датарфейм в виде времянного ряда
-    :param target_col: Целевой признак
-    :param T: Длина последовательности
-    :param use_ML: False если данные будут использоваться для обучения ANN
-
-    :return: X, y
+    - X (np.array): Input features.
+    - y (np.array): Target values.
+    - N (int): Number of samples.
+    - D (int): Number of feature dimensions.
     """
 
-    # Define features and targets
-    features = df_timeseries.drop(columns=target_col).values
-    targets = df_timeseries[target_col].values
+    # Ensure target is a column in the DataFrame
+    if target not in df_timeseries.columns:
+        raise ValueError(f"'{target}' not found in the DataFrame columns.")
 
-    # Define data dimension
-    D = features.shape[1]  # Num of columns in input data. Features number.
-    N = features.shape[0] - T  # Num of samples in dataset
+    # Ensure T is a valid lag value
+    if not (1 <= T < len(df_timeseries)):
+        raise ValueError(f"T must be between 1 and {len(df_timeseries) - 1}.")
 
-    X = np.zeros((N, T, D))
-    y = np.zeros(N)
+    # Extract features and target values
+    features = df_timeseries.drop(columns=target).values
+    targets = df_timeseries[target].values
 
-    for t in range(N):
+    # Determine dimensions
+    num_samples = len(df_timeseries) - T
+    num_features = features.shape[1]
+
+    # Initialize X and y matrices
+    X = np.zeros((num_samples, T, num_features))
+    y = np.zeros(num_samples)
+
+    # Populate X and y
+    for t in range(num_samples):
         X[t, :, :] = features[t : t + T]
         y[t] = targets[t + T]
 
-    # Для классических моделей ML 3D матрицу нужно распаковать в 2D.
-    # В ANN нужно отпралять 3D, без распаковки.
-    if use_ML:
-        X = X.reshape(N, T * D)
+    # Flatten X for ML models if required
+    if flatten_features:
+        X = X.reshape(num_samples, T * num_features)
 
-    return X, y, N, D
+    return X, y, num_samples, num_features
 
 
 class StateLessTransformer(BaseEstimator, TransformerMixin):
@@ -1317,3 +1466,88 @@ class MeanNormalizationScaler(BaseEstimator, TransformerMixin):
         X_transform = X.copy()
         X_transform = (X_transform - self.means) / self.ranges
         return X_transform
+
+
+class SelectScaler(BaseEstimator, TransformerMixin):
+    """
+    A custom transformer that allows for the selection of different scalers.
+
+    Parameters:
+    -----------
+    name : str, default="no_scaler"
+        The name of the scaler to use.
+        Options are: "standard", "minmax", "robust", "mean_normalization", and "no_scaler".
+
+    Attributes:
+    -----------
+    SCALERS : dict
+        A dictionary containing the available scalers.
+    scaler : scaler object
+        The selected scaler based on the provided name.
+
+    Example:
+    --------
+    >>> transformer = SelectScaler(name="minmax")
+    >>> transformed_data = transformer.fit_transform(data)
+    """
+
+    SCALERS = {
+        "standard": StandardScaler(),
+        "minmax": MinMaxScaler(),
+        "robust": RobustScaler(),
+        "mean_normalization": MeanNormalizationScaler(),
+        "no_scaler": None,
+    }
+
+    def __init__(self, name="no_scaler"):
+        """
+        Initialize the SelectScaler with the desired scaler name.
+        """
+        self.name = name
+        self.scaler = self.SCALERS.get(name, None)
+
+    def fit(self, X, y=None):
+        """
+        Fit the selected scaler to the data if a scaler is selected.
+
+        Parameters:
+        -----------
+        X : array-like, shape (n_samples, n_features)
+            The data to fit.
+        y : array-like, shape (n_samples,), optional
+            Target values. Not used.
+
+        Returns:
+        --------
+        self : object
+        """
+        if self.scaler:
+            self.scaler.fit(X, y)
+        return self
+
+    def transform(self, X, y=None):
+        """
+        Transform the data using the selected scaler if a scaler is selected.
+        Otherwise, return the original data.
+
+        Parameters:
+        -----------
+        X : array-like, shape (n_samples, n_features)
+            The data to transform.
+        y : array-like, shape (n_samples,), optional
+            Target values. Not used.
+
+        Returns:
+        --------
+        X_new : array-like, shape (n_samples, n_features)
+            The transformed data or the original data if no scaler is selected.
+        """
+        if self.scaler:
+            return self.scaler.transform(X)
+        return X
+
+
+def alert():
+    frequency = 1000  # Set frequency to 2500 Hertz
+    duration = 3000  # Set duration to 1000 ms == 1 second
+    winsound.Beep(frequency, duration)
