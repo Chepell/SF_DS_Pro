@@ -1,3 +1,7 @@
+from functools import wraps
+from datetime import timedelta
+from time import time
+
 import logging
 import os
 
@@ -24,6 +28,87 @@ import winsound
 
 # plt.style.use("ggplot")
 # sns.set_theme("notebook")
+
+
+def format_timedelta(td):
+    """
+    Format a timedelta object into a string, breaking it down into days, hours, minutes, and seconds.
+
+    Parameters:
+    - td (timedelta): The timedelta object to format.
+
+    Returns:
+    - str: The formatted string representation of the timedelta.
+    """
+
+    # Calculate total seconds from the timedelta object
+    total_seconds = td.total_seconds()
+
+    # Less than 1 minute
+    if total_seconds < 60:
+        return f"{total_seconds:02.02f} sec."
+
+    # Less than 1 hour
+    elif total_seconds < 3600:
+        minutes = total_seconds // 60
+        seconds = total_seconds % 60
+        return f"{int(minutes):02d} min. {int(seconds):02d} sec."
+
+    # Less than 1 day
+    elif total_seconds < 86400:
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        return f"{int(hours):02d} hours {int(minutes):02d} min. {int(seconds):02d} sec."
+
+    # 1 day or more
+    else:
+        days = td.days
+        hours = (total_seconds % 86400) // 3600
+        minutes = (total_seconds % 3600) // 60
+        return f"{days:02d} days {int(hours):02d} hours {int(minutes):02d} min."
+
+
+def show_duration_decorator(func):
+    """
+    A decorator that prints the duration taken for the decorated function to execute.
+
+    Parameters:
+    - func (callable): The function to decorate.
+
+    Returns:
+    - callable: The decorated function.
+    """
+
+    @wraps(func)
+    def decorated_func(*args, **kwargs):
+        # Record start time before executing the function
+        start_time = time()
+
+        # Execute the original function
+        result = func(*args, **kwargs)
+
+        # Record end time after function execution
+        end_time = time()
+
+        # Calculate the duration in seconds
+        duration_sec = end_time - start_time
+
+        # Convert the duration to a timedelta object
+        td = timedelta(seconds=duration_sec)
+
+        # Format the timedelta to a string
+        format_td = format_timedelta(td)
+
+        # Construct and print the output message
+        text = f"Function '{func.__name__}' has completed in {format_td}"
+        print(text)
+        print()
+
+        # Return the result of the original function
+        return result
+
+    return decorated_func
 
 
 def get_columns_null_info_df(df):
@@ -613,10 +698,6 @@ def calculate_target_feature_per_category(
     return df.merge(group_category, on=feature, how="left")
 
 
-import pandas as pd
-import matplotlib.pyplot as plt
-
-
 def plot_corr_heatmap(df, decimal_places=2):
     """
     Plot a correlation heatmap for the given DataFrame.
@@ -667,7 +748,6 @@ def plot_corr_heatmap(df, decimal_places=2):
 
     plt.tight_layout()
     plt.show()
-
 
 
 def plot_pairplot(df):
@@ -898,9 +978,6 @@ def print_regression_metrics(
         )
 
 
-from sklearn import metrics
-
-
 def print_classification_metrics(
     y_train,
     y_train_predict,
@@ -944,10 +1021,9 @@ def print_classification_metrics(
             )
         if show_f1:
             print(f"F1: {metrics.f1_score(y_true, y_pred, average=average):.3f}")
-        
+
         if show_roc_auc:
             print(f"ROC AUC: {metrics.roc_auc_score(y_true, y_pred):.3f}")
-            
 
     print("*** TRAIN ***")
     print_metrics(y_train, y_train_predict)
@@ -1198,17 +1274,16 @@ def shapiro_normal_test(x, threshold=0.05):
 def profit_margin_for_zero_mo(profit_factor):
     """
     Calculate the profit margin for zero months operation.
-    
+
     Parameters:
     - profit_factor (float): The profit factor to calculate the margin.
-    
+
     Returns:
     - float: Profit margin, rounded to two decimal places.
     """
-    
+
     # Calculate the profit margin using the provided formula and round it to 2 decimal places
     return round(1 / (profit_factor + 1), 2)
-
 
 
 def create_X_y_from_timeseries(df_timeseries, target, T, flatten_features=True):
@@ -1547,7 +1622,22 @@ class SelectScaler(BaseEstimator, TransformerMixin):
         return X
 
 
-def alert():
-    frequency = 1000  # Set frequency to 2500 Hertz
-    duration = 3000  # Set duration to 1000 ms == 1 second
+def alert(sec=3):
+    """
+    Produce a beep sound as an alert.
+
+    Parameters:
+    - sec (int): Duration of the beep in seconds. Default is 3.
+
+    Returns:
+    - None
+    """
+
+    # Set frequency for the beep sound in Hertz
+    frequency = 1000
+
+    # Convert duration from seconds to milliseconds
+    duration = sec * 1000
+
+    # Produce the beep sound
     winsound.Beep(frequency, duration)
