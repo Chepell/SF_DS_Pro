@@ -534,40 +534,83 @@ def diff_proportions_confidence_interval(n, xp, gamma=0.95):
     return round(lower_bound * 100, 2), round(upper_bound * 100, 2)
 
 
+# def get_logger(path, file):
+#     """
+#     Функция для создания лог-файла и записи в него информации
+# 
+    # :param path: путь к директории
+    # :param file: имя файла
+    # :return: Возвращает объект логгера
+    # """
+
+    # # проверяем, существует ли файл
+    # log_file = os.path.join(path, file)
+
+    # # если  файла нет, создаем его
+    # if not os.path.isfile(log_file):
+    #     open(log_file, "w+").close()
+    # # формат логирования
+    # file_logging_format = "%(levelname)s: %(asctime)s: %(message)s"
+    # # формат даты
+    # date_format = "%Y-%m-%d %H:%M:%S"
+    # # конфигурируем лог-файл
+    # logging.basicConfig(
+    #     format=file_logging_format, datefmt=date_format, encoding="utf-8"
+    # )
+    # logger = logging.getLogger()
+    # logger.setLevel(logging.DEBUG)
+    # # создадим хэнлдер для записи лога в файл
+    # handler = logging.FileHandler(log_file, encoding="utf-8")
+    # # установим уровень логирования
+    # handler.setLevel(logging.DEBUG)
+    # # создадим формат логирования, используя file_logging_format
+    # formatter = logging.Formatter(file_logging_format, date_format)
+    # handler.setFormatter(formatter)
+    # # добавим хэндлер лог-файлу
+    # logger.addHandler(handler)
+    # return logger
+
+
 def get_logger(path, file):
     """
-    Функция для создания лог-файла и записи в него информации
+    Create a logger to write logs to a specified file.
 
-    :param path: путь к директории
-    :param file: имя файла
-    :return: Возвращает объект логгера
+    Args:
+    path (str): Path to the directory where the log file will be saved.
+    file (str): Name of the log file.
+
+    Returns:
+    logging.Logger: Configured logger object.
     """
-
-    # проверяем, существует ли файл
+    
+    # Construct full log file path
     log_file = os.path.join(path, file)
 
-    # если  файла нет, создаем его
+    # Create log file if it doesn't exist
     if not os.path.isfile(log_file):
         open(log_file, "w+").close()
-    # формат логирования
+
+    # Define logging format and date format
     file_logging_format = "%(levelname)s: %(asctime)s: %(message)s"
-    # формат даты
     date_format = "%Y-%m-%d %H:%M:%S"
-    # конфигурируем лог-файл
-    logging.basicConfig(
-        format=file_logging_format, datefmt=date_format, encoding="utf-8"
-    )
+
+    # Create a logger object
     logger = logging.getLogger()
+
+    # Set the log level
     logger.setLevel(logging.DEBUG)
-    # создадим хэнлдер для записи лога в файл
+
+    # Create a file handler for writing logs
     handler = logging.FileHandler(log_file, encoding="utf-8")
-    # установим уровень логирования
     handler.setLevel(logging.DEBUG)
-    # создадим формат логирования, используя file_logging_format
+
+    # Create a formatter and set it for the handler
     formatter = logging.Formatter(file_logging_format, date_format)
     handler.setFormatter(formatter)
-    # добавим хэндлер лог-файлу
+
+    # Add the handler to the logger
     logger.addHandler(handler)
+
     return logger
 
 
@@ -1191,30 +1234,38 @@ def plot_PR_curve(y_train, y_cv_proba_pred):
     plt.show()
 
 
-def adf(x, threshold=0.05):
+def adfuller_test(x, threshold=0.05, verbose=False):
     """
-    Тест стационарности Augmented Dickey-Fuller Test(ADF Test)
+    Perform the Augmented Dickey-Fuller test to check the stationarity of a time series.
 
     Args:
-        x: Вектор значений переданный для проверки на стационарность
-        threshold: Уровень достоверности, по умолчанию 5%
+        x (array-like): The time series data to test for stationarity.
+        threshold (float, optional): Significance level for the test, default is 0.05.
+        verbose (bool, optional): If True, prints the test's statistic, p-value, and critical values. Default is False.
 
     Returns:
+        float: The p-value of the test.
     """
 
-    _, pvalue = adfuller(x)[0], adfuller(x)[1]
+    # Perform the Augmented Dickey-Fuller test
+    result = adfuller(x)
+    statistic, p_value, _, _, critical_values = result
 
-    print("Test-Statistic:", _)
-    print("P-Value:", pvalue)
+    # Verbose output
+    if verbose:
+        print("ADF Statistic:", statistic)
+        print("P-Value:", p_value)
+        print("Critical Values:")
+        for key, value in critical_values.items():
+            print(f"\t{key}: {value}")
 
-    # The null hypothesis of the ADF test is that the time series is non-stationary.
-    H0 = "Time series is non-stationary"
-    Ha = "Time series is stationary!"
-
-    if pvalue <= threshold:  # Reject the null hypothesis
-        print(Ha)
+    # Determine stationarity based on the p-value and threshold
+    if p_value <= threshold:
+        print("The time series is stationary.") if verbose else None
     else:
-        print(H0)
+        print("The time series is not stationary.") if verbose else None
+
+    return p_value
 
 
 def pirson_normal_test(x, threshold=0.05):
